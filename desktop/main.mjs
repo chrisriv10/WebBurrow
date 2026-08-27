@@ -9,7 +9,15 @@ const screenshotArgument = process.argv.find((argument) =>
   argument.startsWith('--screenshot='),
 );
 const screenshotPath = screenshotArgument?.slice('--screenshot='.length);
+const qaViewArgument = process.argv.find((argument) =>
+  argument.startsWith('--qa-view='),
+);
+const qaView = qaViewArgument?.slice('--qa-view='.length);
 const rendererPath = path.join(appDirectory, 'dist', 'index.html');
+
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.webburrow.desktop');
+}
 
 function isSafeExternalUrl(value) {
   try {
@@ -21,11 +29,13 @@ function isSafeExternalUrl(value) {
 }
 
 function createWindow() {
+  const rendererErrors = [];
+  const compactQa = isSmokeTest && qaView === 'compact';
   const window = new BrowserWindow({
-    width: 1440,
-    height: 900,
-    minWidth: 900,
-    minHeight: 600,
+    width: compactQa ? 640 : 1440,
+    height: compactQa ? 720 : 900,
+    minWidth: compactQa ? 560 : 900,
+    minHeight: compactQa ? 520 : 600,
     show: false,
     title: 'WebBurrow',
     backgroundColor: '#080b14',
@@ -49,6 +59,11 @@ function createWindow() {
     }
   });
 
+  window.webContents.on('console-message', (event) => {
+    if (isSmokeTest) console.log(`WEBBURROW_RENDERER_CONSOLE ${JSON.stringify({ level:event.level,message:event.message,lineNumber:event.lineNumber,sourceId:event.sourceId })}`);
+    if (event.level === 'error') rendererErrors.push(event.message);
+  });
+
   window.webContents.on(
     'did-fail-load',
     (_event, errorCode, errorDescription) => {
@@ -65,11 +80,58 @@ function createWindow() {
     if (!isSmokeTest) return;
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1800));
+      window.showInactive();
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      const rendererState = await window.webContents.executeJavaScript(
+        `(async () => JSON.stringify({ text: document.body.innerText.slice(0, 500), databases: indexedDB.databases ? await indexedDB.databases() : [] }))()`,
+      );
+      console.log(`WEBBURROW_DESKTOP_STATE ${rendererState}`);
+      if (JSON.parse(rendererState).text.includes('OPENING YOUR BURROW')) {
+        throw new Error('Renderer did not finish local persistence initialization.');
+      }
+      await window.webContents.executeJavaScript(
+        `Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('without mouse look'))?.click()`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 1400));
+      if (qaView === 'studio' || qaView === 'lounge') {
+        const digit = qaView === 'studio' ? '2' : '3';
+        await window.webContents.executeJavaScript(
+          `window.dispatchEvent(new KeyboardEvent('keydown', { altKey:true, code:'Digit${digit}', key:'${digit}', bubbles:true }))`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1400));
+      }
+      if (qaView === 'tray' || qaView === 'compact') {
+        await window.webContents.executeJavaScript(
+          `document.querySelector('[aria-label="Open Burrow Tray"]')?.click()`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 600));
+      }
+      if (qaView === 'add' || qaView === 'data') {
+        const label = qaView === 'add' ? 'Add site' : 'WebBurrow';
+        await window.webContents.executeJavaScript(
+          `Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('${label}'))?.click()`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+      if (qaView === 'launcher') {
+        await window.webContents.executeJavaScript(
+          `window.dispatchEvent(new KeyboardEvent('keydown', { ctrlKey:true, key:'k', bubbles:true }))`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 400));
+      }
+      if (qaView === 'edit') {
+        await window.webContents.executeJavaScript(
+          `Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Edit')?.click()`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 900));
+      }
       if (screenshotPath) {
         const image = await window.webContents.capturePage();
         fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
         fs.writeFileSync(screenshotPath, image.toPNG());
+      }
+      if (rendererErrors.length) {
+        throw new Error(`Renderer logged ${rendererErrors.length} error(s): ${rendererErrors[0]}`);
       }
       console.log('WEBBURROW_DESKTOP_SMOKE_OK');
       app.exit(0);

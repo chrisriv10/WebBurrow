@@ -4,11 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#080b14" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' blob: 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data: blob:; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:" />
     <meta
       name="description"
       content="WebBurrow — a local-first 3D home for your bookmarks."
     />
     <title>WebBurrow</title>
+    <style>
+      @font-face { font-family:'Space Grotesk'; src:url('./fonts/space-grotesk-latin-500-normal.woff2') format('woff2'); font-weight:400 700; font-display:swap; }
+      @font-face { font-family:'IBM Plex Mono'; src:url('./fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); font-weight:400 700; font-display:swap; }
+    </style>
   </head>
   <body>
     <div id="root"></div>

@@ -8,6 +8,7 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   root: path.join(projectRoot, 'desktop'),
+  publicDir: path.join(projectRoot, 'public'),
   base: './',
   css: { postcss: { plugins: [tailwindcss()] } },
   plugins: [react()],

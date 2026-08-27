@@ -12,6 +12,7 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "vinext start",
+    "desktop:icon": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-windows-icon.ps1",
     "desktop:build": "vite build --config vite.desktop.config.ts",
     "desktop:preview": "npm run desktop:build && electron .",
     "desktop:pack": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-desktop.ps1 -Target dir",

@@ -28,6 +28,9 @@ if (-not $stagingRoot.StartsWith(
 
 Push-Location $projectRoot
 try {
+  & powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-windows-icon.ps1
+  if ($LASTEXITCODE -ne 0) { throw 'Desktop icon generation failed.' }
+
   & npm run desktop:build
   if ($LASTEXITCODE -ne 0) { throw 'Desktop renderer build failed.' }
 
