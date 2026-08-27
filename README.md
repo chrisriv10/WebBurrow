@@ -9,7 +9,9 @@ npm install
 npm run dev
 ```
 
-Open the local URL shown by the development server. Use WASD and the mouse to explore, `E` to open a nearby object, `Ctrl+K` or `/` for Quick Access, `T` for the Burrow Tray, and `Home` to return to a safe position.
+Open the local URL shown by the development server. Use WASD and the mouse to explore, hold `Shift` to sprint, press `Space` to jump, and use `E` on nearby sites, the pocket note, favorites rack, or Burrow Lift. `Ctrl+K` or `/` opens Quick Access, `T` opens the Burrow Tray, `Alt+1/2/3` jumps between the starter rooms, and `Home` returns to a safe position.
+
+Edit mode provides an isometric room view with half-meter snapping, collision-aware dragging, 45-degree rotation, duplication, room reassignment, undo, and safe-placement recovery. Site records can include a collection and pinned note. Netscape bookmark HTML and versioned WebBurrow JSON are parsed and validated locally before changes are applied.
 
 ## Windows application
 
@@ -31,5 +33,7 @@ npm test
 npm run build
 npm run desktop:build
 ```
+
+The desktop smoke harness also supports `--smoke-test`, `--screenshot=<absolute-path>`, and focused `--qa-view=studio|lounge|tray|launcher|edit|add|data|compact` arguments when launched through Electron. It fails if startup remains on the loader or the renderer logs an error.
 
 All bookmark, room, preference, note, usage, and configuration data stays in the browser's IndexedDB. Websites open in isolated new tabs; they are never embedded or transmitted through WebBurrow.
