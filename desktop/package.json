@@ -1,0 +1,9 @@
+{
+  "name": "webburrow-desktop",
+  "version": "0.1.0",
+  "description": "A local-first cozy 3D home for bookmarks.",
+  "author": "WebBurrow",
+  "private": true,
+  "type": "module",
+  "main": "main.mjs"
+}
