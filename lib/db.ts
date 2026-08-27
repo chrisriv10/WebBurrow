@@ -1,10 +1,31 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Activity, BookmarkObject, Preferences, Room } from './types';
+import {
+  activitySchema, bookmarkObjectSchema, calendarEventSchema, calendarSourceSchema, collectionSchema, feedItemSchema,
+  feedSourceSchema, integrationCacheSchema, integrationConfigSchema, integrationObjectSchema, notificationSchema,
+  preferencesSchema, roomSchema,
+  type Activity, type BookmarkObject, type BurrowNotification, type CalendarEvent, type CalendarSource, type Collection,
+  type FeedItem, type FeedSource, type IntegrationCache, type IntegrationConfig, type IntegrationObject, type Preferences, type Room,
+} from './types';
 import { DEFAULT_PREFERENCES, DEMO_OBJECTS, DEMO_ROOMS } from './demo';
 
 type Setting = { key:string; value:unknown };
+const INTEGRATION_IDS = ['browser','github','weather','calendar','rss'] as const;
+
 export class BurrowDatabase extends Dexie {
-  rooms!: EntityTable<Room,'id'>; objects!: EntityTable<BookmarkObject,'id'>; activity!: EntityTable<Activity,'id'>; settings!: EntityTable<Setting,'key'>;
+  rooms!: EntityTable<Room,'id'>;
+  objects!: EntityTable<BookmarkObject,'id'>;
+  activity!: EntityTable<Activity,'id'>;
+  settings!: EntityTable<Setting,'key'>;
+  collections!: EntityTable<Collection,'id'>;
+  integrations!: EntityTable<IntegrationConfig,'id'>;
+  integrationCache!: EntityTable<IntegrationCache,'id'>;
+  integrationObjects!: EntityTable<IntegrationObject,'id'>;
+  calendarSources!: EntityTable<CalendarSource,'id'>;
+  calendarEvents!: EntityTable<CalendarEvent,'id'>;
+  feedSources!: EntityTable<FeedSource,'id'>;
+  feedItems!: EntityTable<FeedItem,'id'>;
+  notifications!: EntityTable<BurrowNotification,'id'>;
+
   constructor(name='webburrow') {
     super(name);
     this.version(1).stores({ rooms:'id,createdAt', objects:'id,roomId,url,favorite,createdAt', activity:'id,objectId,openedAt', settings:'key' });
@@ -12,27 +33,86 @@ export class BurrowDatabase extends Dexie {
       const settings=transaction.table('settings');const row=await settings.get('preferences') as Setting|undefined;
       if(row) await settings.put({key:'preferences',value:{...DEFAULT_PREFERENCES,...(row.value as Partial<Preferences>)}});
     });
+    this.version(3).stores({
+      rooms:'id,createdAt,lifecycle', objects:'id,roomId,url,favorite,collectionId,lifecycle,createdAt,updatedAt', activity:'id,objectId,openedAt', settings:'key',
+      collections:'id,name,lifecycle,updatedAt', integrations:'id,enabled,updatedAt', integrationCache:'id,integrationId,expiresAt',
+      integrationObjects:'id,integrationId,roomId,kind,lifecycle', calendarSources:'id,kind,enabled,updatedAt', calendarEvents:'id,sourceId,startAt,endAt',
+      feedSources:'id,enabled,updatedAt', feedItems:'id,sourceId,publishedAt,read', notifications:'id,kind,createdAt,dismissedAt',
+    });
   }
 }
 
 export const db = new BurrowDatabase('webburrow-prototype-v1');
 
-export type Snapshot = { rooms:Room[]; objects:BookmarkObject[]; activity:Activity[]; note:string; preferences:Preferences };
+export type Snapshot = {
+  rooms:Room[]; objects:BookmarkObject[]; activity:Activity[]; note:string; preferences:Preferences; collections:Collection[];
+  integrations:IntegrationConfig[]; integrationCache:IntegrationCache[]; integrationObjects:IntegrationObject[];
+  calendarSources:CalendarSource[]; calendarEvents:CalendarEvent[]; feedSources:FeedSource[]; feedItems:FeedItem[]; notifications:BurrowNotification[];
+};
+export type SnapshotInput = Pick<Snapshot,'rooms'|'objects'|'activity'|'note'|'preferences'>&Partial<Omit<Snapshot,'rooms'|'objects'|'activity'|'note'|'preferences'>>;
 
-export async function loadSnapshot(database=db):Promise<Snapshot> {
-  const [rooms,objects,activity,noteRow,prefRow] = await Promise.all([database.rooms.toArray(),database.objects.toArray(),database.activity.orderBy('openedAt').reverse().limit(20).toArray(),database.settings.get('note'),database.settings.get('preferences')]);
-  if (!rooms.length) {
-    const initial={rooms:DEMO_ROOMS,objects:DEMO_OBJECTS,activity:[],note:'Pin a thought here. It stays in your Burrow.',preferences:DEFAULT_PREFERENCES};
-    await saveSnapshot(initial,database); return structuredClone(initial);
-  }
-  return { rooms:[...rooms].sort((a,b)=>a.createdAt-b.createdAt), objects, activity, note:typeof noteRow?.value==='string'?noteRow.value:'', preferences:{...DEFAULT_PREFERENCES,...(prefRow?.value as Partial<Preferences>|undefined)} };
+function collectionKey(name:string) {
+  const slug=name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,26)||'collection';
+  let hash=0;for(const character of name)hash=((hash<<5)-hash+character.charCodeAt(0))|0;
+  return `collection-${slug}-${Math.abs(hash).toString(36)}`;
 }
 
-export async function saveSnapshot(snapshot:Snapshot,database=db) {
-  await database.transaction('rw',database.rooms,database.objects,database.activity,database.settings,async()=>{
-    await Promise.all([database.rooms.clear(),database.objects.clear(),database.activity.clear()]);
-    await database.rooms.bulkPut(snapshot.rooms); await database.objects.bulkPut(snapshot.objects); await database.activity.bulkPut(snapshot.activity.slice(0,20));
-    await database.settings.bulkPut([{key:'note',value:snapshot.note},{key:'preferences',value:snapshot.preferences},{key:'schemaVersion',value:1}]);
+function safeRows<T>(rows:unknown[],schema:{safeParse:(value:unknown)=>{success:boolean;data?:T}}):T[] {
+  const valid:T[]=[];for(const row of rows){const result=schema.safeParse(row);if(result.success&&result.data)valid.push(result.data);}return valid;
+}
+
+export function normalizeCollections(objects:BookmarkObject[],existing:Collection[]) {
+  const collections=[...existing];const byName=new Map(collections.map(item=>[item.name.toLowerCase(),item]));const now=Date.now();
+  const normalized=objects.map(object=>{
+    if(object.collectionId||!object.collection)return object;
+    const key=object.collection.trim().toLowerCase();let collection=byName.get(key);
+    if(!collection){collection={id:collectionKey(object.collection),name:object.collection,lifecycle:object.lifecycle,createdAt:object.createdAt||now,updatedAt:now};collections.push(collection);byName.set(key,collection);}
+    return {...object,collectionId:collection.id};
+  });
+  return {objects:normalized,collections};
+}
+
+function emptyIntegrations():IntegrationConfig[] { return INTEGRATION_IDS.map((id,index)=>({id,enabled:false,settings:{},updatedAt:index})); }
+
+export function completeSnapshot(input:SnapshotInput):Snapshot {
+  return {rooms:input.rooms,objects:input.objects,activity:input.activity,note:input.note,preferences:input.preferences,collections:input.collections||[],integrations:input.integrations||emptyIntegrations(),integrationCache:input.integrationCache||[],integrationObjects:input.integrationObjects||[],calendarSources:input.calendarSources||[],calendarEvents:input.calendarEvents||[],feedSources:input.feedSources||[],feedItems:input.feedItems||[],notifications:input.notifications||[]};
+}
+
+export async function loadSnapshot(database=db):Promise<Snapshot> {
+  const [roomRows,objectRows,activityRows,noteRow,prefRow,collectionRows,integrationRows,cacheRows,integrationObjectRows,calendarSourceRows,calendarEventRows,feedSourceRows,feedItemRows,notificationRows] = await Promise.all([
+    database.rooms.toArray(),database.objects.toArray(),database.activity.orderBy('openedAt').reverse().limit(20).toArray(),database.settings.get('note'),database.settings.get('preferences'),
+    database.collections.toArray(),database.integrations.toArray(),database.integrationCache.toArray(),database.integrationObjects.toArray(),database.calendarSources.toArray(),database.calendarEvents.toArray(),database.feedSources.toArray(),database.feedItems.toArray(),database.notifications.orderBy('createdAt').reverse().limit(100).toArray(),
+  ]);
+  let rooms=safeRows(roomRows,roomSchema).filter(room=>room.lifecycle==='permanent');
+  let objects=safeRows(objectRows,bookmarkObjectSchema).filter(object=>object.lifecycle==='permanent');
+  if(!rooms.length){rooms=structuredClone(DEMO_ROOMS);objects=structuredClone(DEMO_OBJECTS);}
+  const normalized=normalizeCollections(objects,safeRows(collectionRows,collectionSchema).filter(item=>item.lifecycle==='permanent'));
+  const integrations=safeRows(integrationRows,integrationConfigSchema);const existingIds=new Set(integrations.map(item=>item.id));
+  const snapshot:Snapshot={
+    rooms:[...rooms].sort((a,b)=>a.createdAt-b.createdAt),objects:normalized.objects,activity:safeRows(activityRows,activitySchema),
+    note:typeof noteRow?.value==='string'?noteRow.value:'Pin a thought here. It stays in your Burrow.',
+    preferences:preferencesSchema.parse({...DEFAULT_PREFERENCES,...(prefRow?.value as Partial<Preferences>|undefined)}),collections:normalized.collections,
+    integrations:[...integrations,...emptyIntegrations().filter(item=>!existingIds.has(item.id))],integrationCache:safeRows(cacheRows,integrationCacheSchema),
+    integrationObjects:safeRows(integrationObjectRows,integrationObjectSchema).filter(item=>item.lifecycle==='permanent'),calendarSources:safeRows(calendarSourceRows,calendarSourceSchema),
+    calendarEvents:safeRows(calendarEventRows,calendarEventSchema),feedSources:safeRows(feedSourceRows,feedSourceSchema),feedItems:safeRows(feedItemRows,feedItemSchema),notifications:safeRows(notificationRows,notificationSchema),
+  };
+  if(!roomRows.length)await saveSnapshot(snapshot,database);
+  return snapshot;
+}
+
+export async function saveSnapshot(input:SnapshotInput,database=db) {
+  const snapshot=completeSnapshot(input);
+  const rooms=snapshot.rooms.filter(room=>room.lifecycle==='permanent');const roomIds=new Set(rooms.map(room=>room.id));
+  const objects=snapshot.objects.filter(object=>object.lifecycle==='permanent'&&roomIds.has(object.roomId));
+  const collections=snapshot.collections.filter(item=>item.lifecycle==='permanent');
+  await database.transaction('rw',database.tables,async()=>{
+    await Promise.all(database.tables.map(table=>table.name==='settings'?Promise.resolve():table.clear()));
+    await database.rooms.bulkPut(rooms);await database.objects.bulkPut(objects);await database.activity.bulkPut(snapshot.activity.slice(0,20));
+    await database.collections.bulkPut(collections);await database.integrations.bulkPut(snapshot.integrations);await database.integrationCache.bulkPut(snapshot.integrationCache);
+    await database.integrationObjects.bulkPut(snapshot.integrationObjects.filter(item=>item.lifecycle==='permanent'&&roomIds.has(item.roomId)));
+    await database.calendarSources.bulkPut(snapshot.calendarSources);await database.calendarEvents.bulkPut(snapshot.calendarEvents.slice(0,500));
+    await database.feedSources.bulkPut(snapshot.feedSources);await database.feedItems.bulkPut(snapshot.feedItems);await database.notifications.bulkPut(snapshot.notifications.slice(0,100));
+    await database.settings.bulkPut([{key:'note',value:snapshot.note},{key:'preferences',value:snapshot.preferences},{key:'schemaVersion',value:2}]);
   });
 }
 

@@ -2,13 +2,13 @@ import type { BookmarkObject, Preferences, Room } from './types';
 
 const now = Date.now();
 export const DEMO_ROOMS: Room[] = [
-  { id:'room-home', name:'Home Den', template:'den', accent:'#a78bfa', spawn:[0,1.1,7], isDemo:true, createdAt:now },
-  { id:'room-dev', name:'Developer Studio', template:'studio', accent:'#74c7ec', spawn:[0,1.1,7], isDemo:true, createdAt:now+1 },
-  { id:'room-media', name:'Media Lounge', template:'lounge', accent:'#ff9f68', spawn:[0,1.1,7], isDemo:true, createdAt:now+2 },
+  { id:'room-home', name:'Home Den', template:'den', accent:'#a78bfa', spawn:[0,1.1,7], lifecycle:'permanent', isDemo:true, createdAt:now },
+  { id:'room-dev', name:'Developer Studio', template:'studio', accent:'#74c7ec', spawn:[0,1.1,7], lifecycle:'permanent', isDemo:true, createdAt:now+1 },
+  { id:'room-media', name:'Media Lounge', template:'lounge', accent:'#ff9f68', spawn:[0,1.1,7], lifecycle:'permanent', isDemo:true, createdAt:now+2 },
 ];
 
 const make = (id:string, roomId:string, name:string, url:string, archetype:BookmarkObject['archetype'], color:string, position:[number,number,number], favorite=false):BookmarkObject => ({
-  id, roomId, name, url, archetype, color, position, rotation:0, favorite, icon:'globe', usageCount:0, collection:roomId==='room-dev'?'Build':roomId==='room-media'?'Unwind':'Everyday', source:'demo', isDemo:true, createdAt:now, updatedAt:now,
+  id, roomId, name, url, archetype, color, position, rotation:0, favorite, icon:'globe', usageCount:0, collection:roomId==='room-dev'?'Build':roomId==='room-media'?'Unwind':'Everyday', lifecycle:'permanent', source:'demo', isDemo:true, createdAt:now, updatedAt:now,
 });
 
 export const DEMO_OBJECTS: BookmarkObject[] = [
@@ -23,4 +23,4 @@ export const DEMO_OBJECTS: BookmarkObject[] = [
   make('site-twitch','room-media','Twitch','https://www.twitch.tv/','poster','#a980ff',[5,0,-1]),
 ];
 
-export const DEFAULT_PREFERENCES: Preferences = { lastRoomId:'room-home', trayOpen:false, trayPinned:false, reducedEffects:false, hasEntered:false, recentSearches:[] };
+export const DEFAULT_PREFERENCES: Preferences = { lastRoomId:'room-home', trayOpen:false, trayPinned:false, reducedEffects:false, hasEntered:false, recentSearches:[], searchProvider:'duckduckgo', trayModules:['favorites','recent','note'], systemTrayEnabled:false, minimizeToTray:false, temperatureUnit:'fahrenheit', windowEffects:true };
