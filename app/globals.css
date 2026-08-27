@@ -1,13 +1,20 @@
 @import 'tailwindcss';
 
+@font-face { font-family:'Space Grotesk'; src:url('/fonts/space-grotesk-latin-500-normal.woff2') format('woff2'); font-style:normal; font-weight:400 700; font-display:swap; }
+@font-face { font-family:'IBM Plex Mono'; src:url('/fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); font-style:normal; font-weight:400 700; font-display:swap; }
+
 :root { --ink:#f5f2ff; --muted:#aaa8bd; --panel:rgba(11,13,25,.78); --line:rgba(205,202,255,.16); --cyan:#8be6ff; --violet:#a78bfa; --amber:#ffbd72; color-scheme:dark; }
 * { box-sizing:border-box; }
 html, body { width:100%; min-height:100%; margin:0; overflow:hidden; background:#080913; }
 body { color:var(--ink); font-family:'Space Grotesk',system-ui,sans-serif; }
+::selection { background:rgba(139,230,255,.24); color:white; }
+::-webkit-scrollbar { width:8px; height:8px; }
+::-webkit-scrollbar-thumb { border:2px solid transparent; border-radius:999px; background:rgba(200,210,255,.16); background-clip:padding-box; }
 button,input,textarea,select { font:inherit; }
 button { color:inherit; cursor:pointer; }
 button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible { outline:2px solid var(--cyan); outline-offset:2px; }
 .glass { border:1px solid var(--line); background:linear-gradient(145deg,rgba(27,29,51,.88),rgba(8,10,20,.76)); box-shadow:0 18px 60px rgba(0,0,0,.34),inset 0 1px rgba(255,255,255,.05); backdrop-filter:blur(18px); }
+#world-surface::after { position:absolute; inset:0; content:''; pointer-events:none; background:radial-gradient(circle at 50% 42%,transparent 44%,rgba(1,2,8,.2) 78%,rgba(1,2,8,.48) 100%),linear-gradient(115deg,rgba(120,111,220,.025),transparent 38%,rgba(56,193,215,.018)); mix-blend-mode:screen; }
 .mono { font-family:'IBM Plex Mono',monospace; }
 .hud-button { display:inline-flex; height:44px; align-items:center; justify-content:center; gap:8px; border:1px solid var(--line); border-radius:12px; background:linear-gradient(145deg,rgba(27,29,51,.88),rgba(8,10,20,.76)); padding:0 14px; font-size:13px; box-shadow:0 12px 34px rgba(0,0,0,.25),inset 0 1px rgba(255,255,255,.05); backdrop-filter:blur(16px); transition:transform .2s ease,background .2s ease; }
 .hud-button:hover { transform:translateY(-2px); background:rgba(37,39,65,.9); }
@@ -17,7 +24,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .interaction-prompt.is-active { color:white; opacity:1; transform:translateX(-50%) translateY(-3px); border-color:rgba(139,230,255,.35); }
 .toast { animation:toast-in .3s ease both; }
 .burrow-loader { animation:pulse-burrow 1.4s ease-in-out infinite; }
+.onboarding-card { animation:card-arrive .55s cubic-bezier(.2,.8,.2,1) both; }
+.arrival-card { animation:room-arrival .9s ease both; background:radial-gradient(circle,rgba(15,18,34,.66),rgba(5,6,13,.9)); }
+.arrival-card > div { animation:arrival-copy .9s ease both; }
 @keyframes toast-in { from{opacity:0;transform:translate(-50%,-8px)} to{opacity:1;transform:translate(-50%,0)} }
 @keyframes pulse-burrow { 50%{transform:rotate(45deg) scale(.82);box-shadow:0 0 32px rgba(167,139,250,.3)} }
+@keyframes card-arrive { from{opacity:0;transform:translate(-50%,-47%) scale(.97)} to{opacity:1;transform:translate(-50%,-50%) scale(1)} }
+@keyframes room-arrival { 0%{opacity:0} 18%{opacity:1} 72%{opacity:1} 100%{opacity:0} }
+@keyframes arrival-copy { 0%{opacity:0;transform:translateY(8px)} 25%{opacity:1;transform:none} 74%{opacity:1;transform:none} 100%{opacity:0;transform:translateY(-5px)} }
 @media (max-width:640px) { .tray-panel { inset:auto 10px 10px 10px; width:auto; max-height:76dvh; } .interaction-prompt { bottom:82px; max-width:calc(100% - 24px); white-space:nowrap; overflow:hidden; } .hud-button { width:42px; padding:0; } }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; transition-duration:.01ms!important; } }

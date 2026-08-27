@@ -21,9 +21,10 @@ export function autoArchetype(urlValue: string): Archetype {
   const host = new URL(normalizeUrl(urlValue)).hostname.replace(/^www\./, '');
   if (/youtube|twitch|netflix|vimeo/.test(host)) return 'tv';
   if (/github|gitlab|vercel|cloudflare|stack/.test(host)) return 'terminal';
-  if (/spotify|soundcloud|bandcamp/.test(host)) return 'arcade';
+  if (/spotify|soundcloud|bandcamp|music|radio/.test(host)) return 'radio';
   if (/docs|developer|wikipedia|notion/.test(host)) return 'book';
   if (/instagram|pinterest|behance|dribbble/.test(host)) return 'poster';
+  if (/mail|calendar|classroom|canvas|school/.test(host)) return 'laptop';
   return 'pedestal';
 }
 

@@ -1,0 +1,31 @@
+import { describe,expect,it } from 'vitest';
+import { firstValidPlacement, interactionPoint, snapValue, validatePlacement } from '@/lib/placement';
+import { DEMO_OBJECTS } from '@/lib/demo';
+
+describe('room placement',()=>{
+  it('snaps values to the shared half-meter grid',()=>{
+    expect(snapValue(1.24)).toBe(1);
+    expect(snapValue(1.26)).toBe(1.5);
+  });
+
+  it('keeps the lift and arrival approach clear',()=>{
+    const source=DEMO_OBJECTS[0];
+    expect(validatePlacement(source,[0,0,-7.2],[])).toMatchObject({valid:false,reason:'Keep the Burrow Lift approach clear.'});
+    expect(validatePlacement(source,[0,0,6.7],[])).toMatchObject({valid:false,reason:'Keep the arrival area clear.'});
+  });
+
+  it('rejects overlapping footprints and finds a valid fallback',()=>{
+    const source={...DEMO_OBJECTS[0],position:[-5,0,-3] as [number,number,number]};
+    const candidate={...DEMO_OBJECTS[1],id:'candidate',roomId:source.roomId};
+    expect(validatePlacement(candidate,[-5.1,0,-3.2],[source])).toMatchObject({valid:false});
+    const placement=firstValidPlacement(source.roomId,candidate.archetype,[source]);
+    expect(validatePlacement(candidate,placement,[source]).valid).toBe(true);
+  });
+
+  it('creates a bounded interaction point in front of an object',()=>{
+    const point=interactionPoint({...DEMO_OBJECTS[0],position:[7.2,0,7.2],rotation:0});
+    expect(point[0]).toBeLessThanOrEqual(7.25);
+    expect(point[2]).toBeLessThanOrEqual(7.25);
+    expect(point[1]).toBe(1.1);
+  });
+});

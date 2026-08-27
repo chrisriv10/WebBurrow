@@ -25,7 +25,7 @@ export async function loadSnapshot(database=db):Promise<Snapshot> {
     const initial={rooms:DEMO_ROOMS,objects:DEMO_OBJECTS,activity:[],note:'Pin a thought here. It stays in your Burrow.',preferences:DEFAULT_PREFERENCES};
     await saveSnapshot(initial,database); return structuredClone(initial);
   }
-  return { rooms, objects, activity, note:typeof noteRow?.value==='string'?noteRow.value:'', preferences:{...DEFAULT_PREFERENCES,...(prefRow?.value as Partial<Preferences>|undefined)} };
+  return { rooms:[...rooms].sort((a,b)=>a.createdAt-b.createdAt), objects, activity, note:typeof noteRow?.value==='string'?noteRow.value:'', preferences:{...DEFAULT_PREFERENCES,...(prefRow?.value as Partial<Preferences>|undefined)} };
 }
 
 export async function saveSnapshot(snapshot:Snapshot,database=db) {
