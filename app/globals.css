@@ -1,0 +1,23 @@
+@import 'tailwindcss';
+
+:root { --ink:#f5f2ff; --muted:#aaa8bd; --panel:rgba(11,13,25,.78); --line:rgba(205,202,255,.16); --cyan:#8be6ff; --violet:#a78bfa; --amber:#ffbd72; color-scheme:dark; }
+* { box-sizing:border-box; }
+html, body { width:100%; min-height:100%; margin:0; overflow:hidden; background:#080913; }
+body { color:var(--ink); font-family:'Space Grotesk',system-ui,sans-serif; }
+button,input,textarea,select { font:inherit; }
+button { color:inherit; cursor:pointer; }
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible { outline:2px solid var(--cyan); outline-offset:2px; }
+.glass { border:1px solid var(--line); background:linear-gradient(145deg,rgba(27,29,51,.88),rgba(8,10,20,.76)); box-shadow:0 18px 60px rgba(0,0,0,.34),inset 0 1px rgba(255,255,255,.05); backdrop-filter:blur(18px); }
+.mono { font-family:'IBM Plex Mono',monospace; }
+.hud-button { display:inline-flex; height:44px; align-items:center; justify-content:center; gap:8px; border:1px solid var(--line); border-radius:12px; background:linear-gradient(145deg,rgba(27,29,51,.88),rgba(8,10,20,.76)); padding:0 14px; font-size:13px; box-shadow:0 12px 34px rgba(0,0,0,.25),inset 0 1px rgba(255,255,255,.05); backdrop-filter:blur(16px); transition:transform .2s ease,background .2s ease; }
+.hud-button:hover { transform:translateY(-2px); background:rgba(37,39,65,.9); }
+.tray-action { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; border-radius:10px; padding:8px 4px; font-size:9px; color:rgba(255,255,255,.48); }
+.tray-action:hover { background:rgba(255,255,255,.06); color:white; }
+.interaction-prompt { color:rgba(255,255,255,.55); opacity:.72; transition:opacity .2s ease,transform .2s ease; }
+.interaction-prompt.is-active { color:white; opacity:1; transform:translateX(-50%) translateY(-3px); border-color:rgba(139,230,255,.35); }
+.toast { animation:toast-in .3s ease both; }
+.burrow-loader { animation:pulse-burrow 1.4s ease-in-out infinite; }
+@keyframes toast-in { from{opacity:0;transform:translate(-50%,-8px)} to{opacity:1;transform:translate(-50%,0)} }
+@keyframes pulse-burrow { 50%{transform:rotate(45deg) scale(.82);box-shadow:0 0 32px rgba(167,139,250,.3)} }
+@media (max-width:640px) { .tray-panel { inset:auto 10px 10px 10px; width:auto; max-height:76dvh; } .interaction-prompt { bottom:82px; max-width:calc(100% - 24px); white-space:nowrap; overflow:hidden; } .hud-button { width:42px; padding:0; } }
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; transition-duration:.01ms!important; } }
