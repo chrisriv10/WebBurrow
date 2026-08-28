@@ -88,10 +88,11 @@ export async function loadSnapshot(database=db):Promise<Snapshot> {
   if(!rooms.length){rooms=structuredClone(DEMO_ROOMS);objects=structuredClone(DEMO_OBJECTS);}
   const normalized=normalizeCollections(objects,safeRows(collectionRows,collectionSchema).filter(item=>item.lifecycle==='permanent'));
   const integrations=safeRows(integrationRows,integrationConfigSchema);const existingIds=new Set(integrations.map(item=>item.id));
+  const parsedPreferences=preferencesSchema.safeParse({...DEFAULT_PREFERENCES,...(prefRow?.value as Partial<Preferences>|undefined)});
   const snapshot:Snapshot={
     rooms:[...rooms].sort((a,b)=>a.createdAt-b.createdAt),objects:normalized.objects,activity:safeRows(activityRows,activitySchema),
     note:typeof noteRow?.value==='string'?noteRow.value:'Pin a thought here. It stays in your Burrow.',
-    preferences:preferencesSchema.parse({...DEFAULT_PREFERENCES,...(prefRow?.value as Partial<Preferences>|undefined)}),collections:normalized.collections,
+    preferences:parsedPreferences.success?parsedPreferences.data:DEFAULT_PREFERENCES,collections:normalized.collections,
     integrations:[...integrations,...emptyIntegrations().filter(item=>!existingIds.has(item.id))],integrationCache:safeRows(cacheRows,integrationCacheSchema),
     integrationObjects:safeRows(integrationObjectRows,integrationObjectSchema).filter(item=>item.lifecycle==='permanent'),calendarSources:safeRows(calendarSourceRows,calendarSourceSchema),
     calendarEvents:safeRows(calendarEventRows,calendarEventSchema),feedSources:safeRows(feedSourceRows,feedSourceSchema),feedItems:safeRows(feedItemRows,feedItemSchema),notifications:safeRows(notificationRows,notificationSchema),

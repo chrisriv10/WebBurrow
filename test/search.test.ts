@@ -1,5 +1,5 @@
 import { describe,expect,it } from 'vitest';
-import { buildSearchIndex, searchEntries } from '@/lib/search';
+import { buildSearchIndex, searchEntries, webSearchEntry } from '@/lib/search';
 import { DEMO_OBJECTS, DEMO_ROOMS } from '@/lib/demo';
 
 describe('Quick Access search',()=>{
@@ -13,4 +13,5 @@ describe('Quick Access search',()=>{
     expect(searchEntries(weighted,'')[0].id).toBe(objects[2].id);
     expect(searchEntries(weighted,objects[0].collection??'Tools').some(entry=>entry.id===objects[0].id)).toBe(true);
   });
+  it('supports command-only filtering and explicit web providers',()=>{expect(searchEntries(index,'> add').every(entry=>entry.kind==='action')).toBe(true);expect(webSearchEntry('g cozy burrows','duckduckgo')?.url).toContain('google.com');expect(webSearchEntry('yt low poly','duckduckgo')?.url).toContain('youtube.com');expect(webSearchEntry('plain query','duckduckgo')?.url).toContain('duckduckgo.com');});
 });

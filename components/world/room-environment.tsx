@@ -39,11 +39,12 @@ function CeilingLights({theme,template}:{theme:RoomTheme;template:Room['template
   })}</group>;
 }
 
-function WindowScape({theme,variant}:{theme:RoomTheme;variant:Room['template']}) {
+function WindowScape({theme,variant,condition}:{theme:RoomTheme;variant:Room['template'];condition?:string}) {
   const lights=variant==='studio'?['#55a9c6','#7ec1d2','#334e67']:variant==='lounge'?['#8a6fa2','#c29bb2','#455376']:['#6676a8','#a1a8c7','#3c527e'];
+  const sky=condition==='storm'?'#25223c':condition==='rain'?'#283b50':condition==='snow'?'#7890a6':condition==='clear'?'#416c99':theme.sky;
   return <group position={[variant==='lounge'?-5.25:5.25,3.5,-10.08]}>
     <RoundedBox args={[5.3,3.45,.18]} radius={.08}><meshStandardMaterial color="#252a39" roughness={.62}/></RoundedBox>
-    <mesh position={[0,0,.1]}><planeGeometry args={[4.8,3.0]}/><meshBasicMaterial color={theme.sky}/></mesh>
+    <mesh position={[0,0,.1]}><planeGeometry args={[4.8,3.0]}/><meshBasicMaterial color={sky}/></mesh>
     <mesh position={[0,-1.18,.13]}><planeGeometry args={[4.7,.58]}/><meshBasicMaterial color={theme.horizon} transparent opacity={.24}/></mesh>
     {Array.from({length:11},(_,index)=>{const x=-2.1+(index%6)*.82;const y=-.95+Math.floor(index/6)*.48;const height=.25+(index%4)*.16;return <mesh key={index} position={[x,y,.16]}><boxGeometry args={[.48,height,.025]}/><meshBasicMaterial color={lights[index%lights.length]} transparent opacity={.55}/></mesh>;})}
     {Array.from({length:13},(_,index)=><mesh key={`star-${index}`} position={[-2.1+(index*1.27)%4.3,-.1+((index*1.91)%1.25),.17]}><circleGeometry args={[index%3===0 ? .018 : .011,6]}/><meshBasicMaterial color="#d8e5ff" transparent opacity={.52}/></mesh>)}
@@ -100,7 +101,7 @@ function ActivityShelf({theme}:{theme:RoomTheme}) {
 }
 
 export function RoomEnvironment({room}:{room:Room}) {
-  const theme=ROOM_THEMES[room.template];const reduced=useBurrow(s=>s.preferences.reducedEffects);const fan=useRef<Group>(null);const [visible,setVisible]=useState(()=>typeof document==='undefined'||!document.hidden);
+  const theme=ROOM_THEMES[room.template];const reduced=useBurrow(s=>s.preferences.reducedEffects);const windowEffects=useBurrow(s=>s.preferences.windowEffects);const weather=useBurrow(s=>s.integrationCache.find(item=>item.integrationId==='weather'&&item.cacheKey==='current')?.data as {condition?:string}|undefined);const fan=useRef<Group>(null);const [visible,setVisible]=useState(()=>typeof document==='undefined'||!document.hidden);
   useEffect(()=>{const update=()=>setVisible(!document.hidden);document.addEventListener('visibilitychange',update);return()=>document.removeEventListener('visibilitychange',update);},[]);
   useFrame((_,delta)=>{if(fan.current&&!reduced&&!document.hidden)fan.current.rotation.y+=delta*.85;});
   return <>
@@ -108,9 +109,11 @@ export function RoomEnvironment({room}:{room:Room}) {
     <hemisphereLight args={[theme.sky,'#080910',1]}/><ambientLight intensity={.52} color="#b7c1e2"/>
     <directionalLight position={[-4,9,6]} intensity={1.8} color="#d4e0ff" castShadow shadow-mapSize={[reduced?512:1024,reduced?512:1024]} shadow-camera-left={-10} shadow-camera-right={10} shadow-camera-top={10} shadow-camera-bottom={-10}/>
     <pointLight position={[-5.5,3.1,1]} intensity={room.template==='den'?8.2:5.8} distance={9} decay={2} color={theme.warm}/><pointLight position={[5,3,-4]} intensity={7.5} distance={10} decay={2} color={theme.cool}/><pointLight position={[0,4.8,5.6]} intensity={10} distance={12} decay={2} color={theme.warm}/>
-    <Architecture theme={theme}/><CeilingLights theme={theme} template={room.template}/><WindowScape theme={theme} variant={room.template}/>{room.template!=='lounge'&&<ActivityShelf theme={theme}/>}
+    <Architecture theme={theme}/><CeilingLights theme={theme} template={room.template}/><WindowScape theme={theme} variant={room.template} condition={weather?.condition}/>{room.template!=='lounge'&&<ActivityShelf theme={theme}/>}
     {room.template==='den'?<DenFurniture theme={theme}/>:room.template==='studio'?<StudioFurniture theme={theme}/>:<LoungeFurniture theme={theme}/>}
     <group ref={fan} position={[0,6.05,2.8]}><mesh><cylinderGeometry args={[.18,.18,.22,12]}/><meshStandardMaterial color="#596078"/></mesh>{[0,1,2].map(index=><RoundedBox key={index} args={[2.15,.08,.32]} position={[1.05,0,0]} rotation={[0,index*Math.PI*2/3,0]} radius={.04}><meshStandardMaterial color="#363b50" roughness={.7}/></RoundedBox>)}</group>
     {!reduced&&visible&&<Sparkles count={20} scale={[16,5.5,18]} size={.65} speed={.08} opacity={.16} color="#b9c9e8"/>}
+    {!reduced&&windowEffects&&visible&&(weather?.condition==='rain'||weather?.condition==='storm')&&<Sparkles count={35} position={[5.2,3.5,-9.7]} scale={[4.5,3,1]} size={.45} speed={1.1} opacity={.42} color="#88c9ea"/>}
+    {!reduced&&windowEffects&&visible&&weather?.condition==='snow'&&<Sparkles count={28} position={[5.2,3.5,-9.7]} scale={[4.5,3,1]} size={1.15} speed={.28} opacity={.6} color="#eef7ff"/>}
   </>;
 }
