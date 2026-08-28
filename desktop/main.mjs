@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { hardenedIntegrationRequest, isSafeExternalUrl, parseDeepLink } from './security.mjs';
 import { runNativeHostClient, startNativeMessageServer } from './native-messaging.mjs';
+import { nativeCapabilities } from './native-contract.mjs';
 
 const appDirectory = path.dirname(fileURLToPath(import.meta.url));
 const isSmokeTest = process.argv.includes('--smoke-test');
@@ -17,10 +18,13 @@ const qaViewArgument = process.argv.find((argument) =>
 const qaView = qaViewArgument?.slice('--qa-view='.length);
 const rendererPath = path.join(appDirectory, 'dist', 'index.html');
 const nativeHostLaunch = process.argv.some(value => value.startsWith('chrome-extension://'));
+const smokeUserDataPath = isSmokeTest ? path.join(app.getPath('temp'),`webburrow-smoke-${process.pid}`) : null;
+if(smokeUserDataPath)app.setPath('userData',smokeUserDataPath);
 let mainWindow;
 let nativeTray;
 let trayPreferences = { enabled:false, minimizeToTray:false };
 let traySnapshot = { favorites:[], recent:[] };
+let browserContext = { workspaces:[], rooms:[], collections:[] };
 let quitting = false;
 let pendingCommand = null;
 let nativeBridge;
@@ -28,6 +32,7 @@ let nativeBridge;
 if (process.platform === 'win32') {
   app.setAppUserModelId('com.webburrow.desktop');
 }
+if(smokeUserDataPath)app.on('quit',()=>{try{fs.rmSync(smokeUserDataPath,{recursive:true,force:true});}catch{}});
 
 function sendCommand(command) {
   if (!command) return;
@@ -203,9 +208,15 @@ function createWindow() {
 }
 
 ipcMain.handle('webburrow:integration-request', (_event, request) => hardenedIntegrationRequest(request));
+ipcMain.handle('webburrow:site-icon', async (_event, request) => {try{const response=await hardenedIntegrationRequest({kind:'favicon',pageUrl:request?.pageUrl,iconUrl:request?.iconUrl});const source=nativeImage.createFromBuffer(Buffer.from(response.body,'base64'));if(source.isEmpty())throw new Error('The response is not a supported image.');const size=source.getSize(),scale=Math.min(1,64/Math.max(size.width,size.height)),resized=source.resize({width:Math.max(1,Math.round(size.width*scale)),height:Math.max(1,Math.round(size.height*scale)),quality:'best'}),png=resized.toPNG();if(png.byteLength>64*1024)throw new Error('The re-encoded icon is too large.');return{ok:true,dataUrl:`data:image/png;base64,${png.toString('base64')}`};}catch(error){return{ok:false,error:String(error?.message||'The icon could not be fetched.').slice(0,240)};}});
 ipcMain.handle('webburrow:open-external', async (_event, url) => { if (!isSafeExternalUrl(url)) return false;if(await nativeBridge?.focus(url))return true; await shell.openExternal(url, { activate:true }); return true; });
 ipcMain.on('webburrow:tray-preferences', (_event, value) => { trayPreferences = { enabled:value?.enabled === true, minimizeToTray:value?.minimizeToTray === true }; rebuildTray(); });
 ipcMain.on('webburrow:tray-snapshot', (_event, value) => { traySnapshot = { favorites:sanitizedMenuItems(value?.favorites), recent:sanitizedMenuItems(value?.recent) }; rebuildTray(); });
+ipcMain.on('webburrow:browser-context', (_event, value) => { browserContext = {
+  workspaces:Array.isArray(value?.workspaces)?value.workspaces.slice(0,30).flatMap(item=>item&&typeof item.id==='string'&&typeof item.name==='string'&&Number.isInteger(item.tabCount)&&['selection','window','group'].includes(item.sourceScope)?[{id:item.id.slice(0,100),name:item.name.slice(0,60),tabCount:Math.max(0,Math.min(100,item.tabCount)),sourceScope:item.sourceScope}]:[]):[],
+  rooms:Array.isArray(value?.rooms)?value.rooms.slice(0,100).flatMap(item=>item&&typeof item.id==='string'&&typeof item.name==='string'?[{id:item.id.slice(0,100),name:item.name.slice(0,80)}]:[]):[],
+  collections:Array.isArray(value?.collections)?value.collections.slice(0,100).flatMap(item=>item&&typeof item.id==='string'&&typeof item.name==='string'?[{id:item.id.slice(0,100),name:item.name.slice(0,80)}]:[]):[],
+}; });
 
 if (nativeHostLaunch) {
   app.whenReady().then(() => runNativeHostClient(app));
@@ -223,7 +234,11 @@ if (nativeHostLaunch) {
     mainWindow = createWindow();
     pendingCommand = deepLinkFromArguments(process.argv);
     nativeBridge = startNativeMessageServer(app, message => {
-      showWindow(message.type === 'capabilities' ? { type:'show' } : message.type === 'send-page' ? { type:'browser-page', payload:message.page } : message.type === 'send-tabs' ? { type:'browser-tabs', payload:{ name:message.name, tabs:message.tabs } } : message.type === 'bookmark-preview' ? { type:'bookmark-preview', payload:message.html } : { type:'show' });
+      if(message.type==='capabilities')return nativeCapabilities(browserContext);
+      if(message.type==='send-page')showWindow({type:'browser-page',payload:{...message.page,roomId:message.roomId,collection:message.collection,archetype:message.archetype,color:message.color,favorite:message.favorite}});
+      else if(message.type==='send-tabs')showWindow({type:'browser-tabs',payload:{name:message.name,tabs:message.tabs,options:{workspaceId:message.workspaceId,mode:message.mode,scope:message.scope}}});
+      else if(message.type==='bookmark-preview')showWindow({type:'bookmark-preview',payload:message.html});
+      return {accepted:true};
     });
 
     app.on('activate', () => {

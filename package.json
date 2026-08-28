@@ -81,6 +81,7 @@
       "preload.cjs",
       "security.mjs",
       "native-messaging.mjs",
+      "native-contract.mjs",
       "icon.png",
       "dist/**/*",
       "package.json"

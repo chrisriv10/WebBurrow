@@ -4,7 +4,7 @@ import { DEFAULT_PREFERENCES, DEMO_OBJECTS, DEMO_ROOMS } from '@/lib/demo';
 
 beforeEach(()=>{
   useBurrow.setState({
-    ready:true,rooms:structuredClone(DEMO_ROOMS),objects:structuredClone(DEMO_OBJECTS),activity:[],note:'',
+    ready:true,rooms:structuredClone(DEMO_ROOMS),objects:structuredClone(DEMO_OBJECTS),activity:[],note:'',siteIcons:[],browserWorkspaces:[],arrivalIds:[],notifications:[],
     preferences:structuredClone(DEFAULT_PREFERENCES),currentRoomId:DEMO_ROOMS[0].id,modal:null,launcherOpen:false,
     editMode:false,selectedId:null,nearObjectId:null,toast:null,undoObject:null,
   });
@@ -42,6 +42,11 @@ describe('Burrow domain actions',()=>{
     useBurrow.getState().receiveBrowserTabs('Focus set',[{title:'Docs',url:'https://example.com/docs'},{title:'Unsafe',url:'file:///C:/secret.txt'}]);
     const room=useBurrow.getState().rooms.at(-1)!;expect(room.lifecycle).toBe('session');expect(useBurrow.getState().objects.filter(item=>item.roomId===room.id)).toHaveLength(1);
     useBurrow.getState().keepSessionRoom(room.id);expect(useBurrow.getState().rooms.find(item=>item.id===room.id)?.lifecycle).toBe('permanent');expect(useBurrow.getState().objects.find(item=>item.roomId===room.id)?.lifecycle).toBe('permanent');
+  });
+
+  it('accepts only bounded companion icons and keeps them in the separate local cache',()=>{
+    useBurrow.getState().receiveBrowserPage({title:'With icon',url:'https://example.com/icon',favicon:{mime:'image/png',dataBase64:Buffer.from('icon fixture').toString('base64')}});
+    const object=useBurrow.getState().objects.at(-1)!;expect(object.siteIconId).toBeTruthy();expect(useBurrow.getState().siteIcons).toHaveLength(1);expect(useBurrow.getState().siteIcons[0]).toMatchObject({siteUrl:'https://example.com/icon',mimeType:'image/png'});
   });
 
   it('appends, promotes and clears temporary browser workspaces without persisting tab identity',()=>{

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
 import { safeStorage } from 'electron';
+import { parseNativeMessage } from './native-contract.mjs';
 
 export const EXTENSION_ID = 'igfepplhdmogifjmgfligakhgoacflhg';
 const ORIGIN = `chrome-extension://${EXTENSION_ID}/`;
@@ -21,17 +22,8 @@ function installationToken(app) {
   return value;
 }
 
-function validMessage(message) {
-  if (!message || typeof message !== 'object' || typeof message.requestId !== 'string' || message.requestId.length > 100) return false;
-  if (!['capabilities','send-page','send-tabs','bookmark-preview','focus-or-open','focus-or-open-result'].includes(message.type)) return false;
-  if (message.type === 'send-tabs' && (!Array.isArray(message.tabs) || message.tabs.length < 1 || message.tabs.length > 100)) return false;
-  if (message.type === 'bookmark-preview' && (typeof message.html !== 'string' || message.html.length > 2_000_000)) return false;
-  const links = message.type === 'send-page' ? [message.page] : message.type === 'send-tabs' ? message.tabs : [];
-  return links.every(item => { try { const url = new URL(item?.url); return typeof item?.title === 'string' && item.title.length <= 200 && ['http:','https:'].includes(url.protocol); } catch { return false; } });
-}
-
 export function startNativeMessageServer(app, dispatch) {
-  const { pipe } = locations(app); const token = installationToken(app);const clients=new Set();const authenticatedClients=new Set();const pending=new Map();
+  const { pipe } = locations(app); const token = installationToken(app);const clients=new Set();const authenticatedClients=new Set();const pending=new Map();const recentRequests=new Map();
   const server = net.createServer(socket => {
     let buffer = '';
     clients.add(socket);socket.on('close',()=>{clients.delete(socket);authenticatedClients.delete(socket);});
@@ -43,11 +35,9 @@ export function startNativeMessageServer(app, dispatch) {
         const lineEnd = buffer.indexOf('\n'); if (lineEnd < 0) break;
         const line = buffer.slice(0, lineEnd); buffer = buffer.slice(lineEnd + 1);
         try {
-          const envelope = JSON.parse(line);
-          if (envelope.token !== token || !validMessage(envelope.message)) throw new Error('Rejected message.');authenticatedClients.add(socket);
-          if(envelope.message.type==='focus-or-open-result'){const resolver=pending.get(envelope.message.requestId);pending.delete(envelope.message.requestId);resolver?.(envelope.message.handled===true);continue;}
-          dispatch(envelope.message);
-          socket.write(`${JSON.stringify({ requestId:envelope.message.requestId, ok:true })}\n`);
+          const envelope = JSON.parse(line);if(envelope.token!==token)throw new Error('Rejected native-host token.');const message=parseNativeMessage(envelope.message);const now=Date.now();for(const[id,time]of recentRequests)if(now-time>60_000)recentRequests.delete(id);if(recentRequests.has(message.requestId))throw new Error('Replayed native message.');recentRequests.set(message.requestId,now);authenticatedClients.add(socket);
+          if(message.type==='focus-or-open-result'){const resolver=pending.get(message.requestId);pending.delete(message.requestId);resolver?.(message.handled===true);continue;}
+          Promise.resolve(dispatch(message)).then(result=>socket.write(`${JSON.stringify({requestId:message.requestId,ok:true,...(result===undefined?{}:{result})})}\n`)).catch(error=>socket.write(`${JSON.stringify({requestId:message.requestId,ok:false,error:{code:'dispatch-error',message:String(error?.message||'The request could not be applied.').slice(0,240)}})}\n`));
         } catch (error) { socket.write(`${JSON.stringify({ ok:false, error:{ code:'invalid-message', message:error.message } })}\n`); }
       }
     });
@@ -79,5 +69,5 @@ export function runNativeHostClient(app) {
   const { pipe } = locations(app); const token = installationToken(app);const socket=net.createConnection(pipe);let reply='';
   socket.setEncoding('utf8');socket.on('data',chunk=>{reply+=chunk;for(;;){const end=reply.indexOf('\n');if(end<0)break;try{writeNative(JSON.parse(reply.slice(0,end)));}catch{writeNative({ok:false,error:{code:'bridge-error',message:'Invalid desktop response.'}});}reply=reply.slice(end+1);}});
   socket.on('error',()=>writeNative({ok:false,error:{code:'not-running',message:'Open WebBurrow and try again.'}}));
-  readNativeFrames(process.stdin,message=>socket.write(`${JSON.stringify({token,message})}\n`));
+  readNativeFrames(process.stdin,message=>{try{socket.write(`${JSON.stringify({token,message:parseNativeMessage(message)})}\n`);}catch(error){writeNative({ok:false,error:{code:'invalid-message',message:String(error?.message||'Invalid native message.').slice(0,240)}});}});
 }
