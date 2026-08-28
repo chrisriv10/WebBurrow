@@ -1,5 +1,5 @@
 import { describe,expect,it } from 'vitest';
-import { firstValidPlacement, interactionPoint, snapValue, suggestedMount, validatePlacement } from '@/lib/placement';
+import { firstValidPlacement, interactionPoint, sessionWorkspacePlacement, snapValue, suggestedMount, validatePlacement } from '@/lib/placement';
 import { DEMO_OBJECTS } from '@/lib/demo';
 
 describe('room placement',()=>{
@@ -35,5 +35,11 @@ describe('room placement',()=>{
     const occupied={...DEMO_OBJECTS[0],mount:{kind:anchor!.kind,surfaceId:anchor!.id}};
     expect(suggestedMount('studio','desk-monitor',[occupied])?.id).toBe('studio-right-desk');
     expect(suggestedMount('studio','poster',[])?.kind).toBe('wall');
+  });
+
+  it('provides 100 stable compact workspace stations inside the Studio layout',()=>{
+    const positions=Array.from({length:100},(_,index)=>sessionWorkspacePlacement(index,'studio'));
+    expect(new Set(positions.map(position=>position.join(','))).size).toBe(100);
+    expect(positions.every(([x,,z])=>x>=-8&&x<=8&&z>=-8.5&&z<=7.5)).toBe(true);
   });
 });

@@ -1,6 +1,6 @@
 {
   "name": "webburrow",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "A local-first cozy 3D home for bookmarks.",
   "author": "WebBurrow",
   "private": true,
@@ -18,7 +18,7 @@
     "desktop:pack": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-desktop.ps1 -Target dir",
     "desktop:dist": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-desktop.ps1 -Target nsis",
     "extension:build": "node scripts/build-extension.mjs",
-    "lint": "eslint . --ignore-pattern dist --ignore-pattern dist-desktop --ignore-pattern desktop/dist --ignore-pattern .next",
+    "lint": "eslint . --ignore-pattern dist --ignore-pattern dist-desktop --ignore-pattern desktop/dist --ignore-pattern browser-extension/dist --ignore-pattern qa --ignore-pattern release --ignore-pattern .next",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
@@ -69,7 +69,14 @@
   "build": {
     "appId": "com.webburrow.desktop",
     "productName": "WebBurrow",
-    "protocols": [{ "name": "WebBurrow", "schemes": ["webburrow"] }],
+    "protocols": [
+      {
+        "name": "WebBurrow",
+        "schemes": [
+          "webburrow"
+        ]
+      }
+    ],
     "asar": true,
     "beforeBuild": "desktop/skip-dependencies.cjs",
     "directories": {
@@ -96,7 +103,7 @@
           ]
         }
       ],
-      "artifactName": "WebBurrow-Setup-${version}.${ext}"
+      "artifactName": "WebBurrow-Setup-${version}-${arch}.${ext}"
     },
     "nsis": {
       "include": "build/installer.nsh",

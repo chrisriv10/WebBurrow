@@ -10,4 +10,4 @@ WebBurrow's room geometry, materials, decorative props, miniature map, and visua
 - **ICAL.js** via `ical.js` — Mozilla Public License 2.0. Used locally for iCalendar parsing and bounded recurrence expansion; no remote code is loaded.
 - **Drei environment helpers** are installed, but no remotely hosted preset or third-party environment image is used by the finished scene.
 
-The WebBurrow Windows application and notification-area icon is the user-supplied WebBurrow artwork, stored locally in `build/icon.png`, `build/icon.ico`, and `desktop/icon.png`. It is used for the installer-created desktop shortcut and the optional native tray.
+The WebBurrow artwork is user-supplied rather than third-party material. Its source is tracked as `build/icon.png`; deterministic derivatives provide the Windows ICO, Electron runtime/tray icon, web metadata icon, and 16/32/48/128px Chromium extension icons. The installer-created Desktop and Start Menu shortcuts use the same artwork.

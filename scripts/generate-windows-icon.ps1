@@ -1,7 +1,9 @@
 param(
   [string]$Source = 'build/icon.png',
   [string]$IcoOutput = 'build/icon.ico',
-  [string]$RuntimeOutput = 'desktop/icon.png'
+  [string]$RuntimeOutput = 'desktop/icon.png',
+  [string]$ExtensionOutput = 'browser-extension/src/icons',
+  [string]$WebOutput = 'public/webburrow-icon.png'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -17,6 +19,8 @@ function Resolve-ProjectPath([string]$PathValue) {
 $sourcePath = Resolve-ProjectPath $Source
 $icoPath = Resolve-ProjectPath $IcoOutput
 $runtimePath = Resolve-ProjectPath $RuntimeOutput
+$extensionPath = Resolve-ProjectPath $ExtensionOutput
+$webPath = Resolve-ProjectPath $WebOutput
 
 if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
   throw "Desktop icon source not found: $sourcePath"
@@ -32,6 +36,8 @@ try {
 
   [System.IO.Directory]::CreateDirectory([System.IO.Path]::GetDirectoryName($icoPath)) | Out-Null
   [System.IO.Directory]::CreateDirectory([System.IO.Path]::GetDirectoryName($runtimePath)) | Out-Null
+  [System.IO.Directory]::CreateDirectory($extensionPath) | Out-Null
+  [System.IO.Directory]::CreateDirectory([System.IO.Path]::GetDirectoryName($webPath)) | Out-Null
   [System.IO.File]::Copy($sourcePath, $runtimePath, $true)
 
   $sizes = @(16, 24, 32, 48, 64, 128, 256)
@@ -68,6 +74,15 @@ try {
       $bitmap.Dispose()
     }
   }
+
+  foreach ($size in @(16, 32, 48, 128)) {
+    $index = [System.Array]::IndexOf($sizes, $size)
+    [System.IO.File]::WriteAllBytes(
+      (Join-Path $extensionPath "icon$size.png"),
+      $pngEntries[$index]
+    )
+  }
+  [System.IO.File]::WriteAllBytes($webPath, $pngEntries[[System.Array]::IndexOf($sizes, 256)])
 
   $fileStream = [System.IO.File]::Open(
     $icoPath,
@@ -110,3 +125,5 @@ try {
 
 Write-Output "Windows icon: $icoPath"
 Write-Output "Runtime icon: $runtimePath"
+Write-Output "Extension icons: $extensionPath"
+Write-Output "Web icon: $webPath"

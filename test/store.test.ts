@@ -64,9 +64,20 @@ describe('Burrow domain actions',()=>{
     const workspace=useBurrow.getState().browserWorkspaces.at(-1)!;
     useBurrow.getState().receiveBrowserTabs('Research',[{title:'Two',url:'https://example.com/two',tabId:5,groupId:3,groupName:'Sources'}],{workspaceId:workspace.id,mode:'append',scope:'group'});
     const items=useBurrow.getState().objects.filter(item=>item.roomId===workspace.roomId);expect(items).toHaveLength(2);expect(items[1].browserReference?.groupName).toBe('Sources');
+    useBurrow.getState().groupSessionItems(items.map(item=>item.id),'Review queue');
+    expect(useBurrow.getState().objects.filter(item=>item.roomId===workspace.roomId).every(item=>item.browserReference?.groupName==='Review queue')).toBe(true);
+    useBurrow.getState().arrangeWorkspace(workspace.id);
+    expect(new Set(useBurrow.getState().objects.filter(item=>item.roomId===workspace.roomId).map(item=>item.position.join(','))).size).toBe(2);
     useBurrow.getState().promoteSessionItems([items[0].id],DEMO_ROOMS[0].id,'Saved research');
     const promoted=useBurrow.getState().objects.find(item=>item.id===items[0].id)!;expect(promoted.lifecycle).toBe('permanent');expect(promoted.browserReference).toBeUndefined();expect(promoted.collection).toBe('Saved research');
     useBurrow.getState().clearWorkspace(workspace.id);expect(useBurrow.getState().rooms.some(room=>room.id===workspace.roomId)).toBe(false);expect(useBurrow.getState().objects.some(item=>item.id===promoted.id)).toBe(true);
+  });
+
+  it('lays out a 100-tab stress workspace without overlapping station coordinates',()=>{
+    const tabs=Array.from({length:100},(_,index)=>({title:`Tab ${index+1}`,url:`https://example.com/work/${index+1}`,tabId:index+1,windowId:7,groupId:index%5,groupName:`Group ${index%5+1}`}));
+    useBurrow.getState().receiveBrowserTabs('Stress room',tabs,{scope:'window'});
+    const workspace=useBurrow.getState().browserWorkspaces.at(-1)!;const items=useBurrow.getState().objects.filter(item=>item.roomId===workspace.roomId);
+    expect(items).toHaveLength(100);expect(new Set(items.map(item=>item.position.join(','))).size).toBe(100);
   });
 
   it('bounds and deduplicates local notifications',()=>{

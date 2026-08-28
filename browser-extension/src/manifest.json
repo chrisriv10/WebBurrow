@@ -1,11 +1,12 @@
 {
   "manifest_version": 3,
   "name": "WebBurrow Companion",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Send pages, selected tabs, and chosen bookmarks to your local WebBurrow.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxUBJ3QJhlj8UK8YFdFkYiQWqYY2LzYFd+uUlms0GWntpx7u5elK+MYNgbXGOXabmnHEb67jG+nHAWLcxtAaNUzZFF1wevdRHOfHq+UWfPNzwAyCrXKpaonZ+55ulLVQT1Z29HP11c56eeuIiMBZeT7upwqI+2i8VpSB8ZrqCUv6m1XFWs6WIpeGGJDwqAYfh538wcJOcAvAlitBW/2T7eSguitwQYfoFxqTTVcId5XOh3UXN0v3onPh8OEoQIJJWvkPL3twkUle/VMXPEiI9So/408f0E39dAweUD1ZBx0gRFeKfZRjK5kyTd/Mo891cn4iCoBMG0agzvu5/08uvRwIDAQAB",
   "permissions": ["activeTab", "storage", "nativeMessaging"],
   "optional_permissions": ["tabs", "tabGroups", "bookmarks"],
   "background": { "service_worker": "service-worker.js" },
-  "action": { "default_title": "Send to WebBurrow", "default_popup": "popup.html" }
+  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "action": { "default_title": "Send to WebBurrow", "default_popup": "popup.html", "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png" } }
 }

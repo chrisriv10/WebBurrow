@@ -8,6 +8,11 @@ import { nativeCapabilities } from './native-contract.mjs';
 
 const appDirectory = path.dirname(fileURLToPath(import.meta.url));
 const isSmokeTest = process.argv.includes('--smoke-test');
+const smokeResultArgument = process.argv.find(argument => argument.startsWith('--smoke-result='));
+const requestedSmokeResult = smokeResultArgument?.slice('--smoke-result='.length);
+const smokeResultCandidate = requestedSmokeResult ? path.resolve(requestedSmokeResult) : null;
+const smokeResultPath = smokeResultCandidate?.toLowerCase().startsWith(`${path.resolve(app.getPath('temp')).toLowerCase()}${path.sep}`) ? smokeResultCandidate : null;
+function writeSmokeResult(stage,detail){if(!smokeResultPath)return;try{fs.writeFileSync(smokeResultPath,JSON.stringify({stage,detail,at:Date.now()}));}catch{}}
 const screenshotArgument = process.argv.find((argument) =>
   argument.startsWith('--screenshot='),
 );
@@ -73,6 +78,7 @@ function rebuildTray() {
 function deepLinkFromArguments(argumentsList) { return argumentsList.map(value => parseDeepLink(value)).find(Boolean) || null; }
 
 function createWindow() {
+  writeSmokeResult('window-created');
   const rendererErrors = [];
   const compactQa = isSmokeTest && qaView === 'compact';
   const window = new BrowserWindow({
@@ -126,29 +132,54 @@ function createWindow() {
   });
 
   window.webContents.once('did-finish-load', async () => {
+    writeSmokeResult('renderer-loaded');
     if (pendingCommand) { sendCommand(pendingCommand); pendingCommand = null; }
     if (!isSmokeTest) return;
 
     try {
-      window.showInactive();
+      window.show();window.focus();
       await new Promise((resolve) => setTimeout(resolve, 5000));
+      writeSmokeResult('reading-renderer');
       const rendererState = await window.webContents.executeJavaScript(
-        `(async () => JSON.stringify({ text: document.body.innerText.slice(0, 500), databases: indexedDB.databases ? await indexedDB.databases() : [], desktopBridge:Boolean(window.webburrowDesktop) }))()`,
+        `JSON.stringify({ text: document.body.innerText.slice(0, 500), desktopBridge:Boolean(window.webburrowDesktop) })`,
       );
-      console.log(`WEBBURROW_DESKTOP_STATE ${rendererState}`);
-      if (JSON.parse(rendererState).text.includes('OPENING YOUR BURROW') || !JSON.parse(rendererState).desktopBridge) {
+      writeSmokeResult('renderer-ready');
+      const parsedRendererState=JSON.parse(rendererState);
+      if (parsedRendererState.text.includes('OPENING YOUR BURROW') || !parsedRendererState.desktopBridge) {
         throw new Error('Renderer did not finish local persistence initialization.');
       }
+      if(rendererErrors.length)throw new Error(`Renderer logged ${rendererErrors.length} error(s): ${rendererErrors[0]}`);
+      if(app.isPackaged){writeSmokeResult('complete',{packaged:true,desktopBridge:true});app.exit(0);return;}
+      console.log(`WEBBURROW_DESKTOP_STATE ${rendererState}`);
       await window.webContents.executeJavaScript(
         `Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('Use quick controls') || button.textContent?.includes('without mouse look'))?.click()`,
       );
       await new Promise((resolve) => setTimeout(resolve, 1400));
+      if (qaView !== 'onboarding') {
+        for (let index = 0; index < 10; index += 1) {
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('Got it · show the next tip'))?.click()`);
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      }
+      if (qaView === 'session' || qaView === 'workspace') {
+        sendCommand({type:'browser-tabs',payload:{name:'Research sprint',tabs:[
+          {title:'Web platform reference',url:'https://developer.mozilla.org/en-US/docs/Web/API',tabId:11,windowId:2,groupId:4,groupName:'Reference'},
+          {title:'Project repository',url:'https://github.com/example/webburrow',tabId:12,windowId:2,groupId:4,groupName:'Reference'},
+          {title:'Design notes',url:'https://example.com/design-notes',tabId:13,windowId:2,groupId:7,groupName:'Ideas'},
+          {title:'Release checklist',url:'https://example.com/release',tabId:14,windowId:2,groupId:7,groupName:'Ideas'},
+        ],options:{mode:'create',scope:'group'}}});
+        await new Promise((resolve) => setTimeout(resolve, 3400));
+      }
+      if (qaView === 'stress') {
+        sendCommand({type:'browser-tabs',payload:{name:'100-tab performance room',tabs:Array.from({length:100},(_,index)=>({title:`Workspace tab ${index+1}`,url:`https://example.com/work/${index+1}`,tabId:index+1,windowId:9,groupId:index%5,groupName:`Group ${index%5+1}`})),options:{mode:'create',scope:'window'}}});
+        await new Promise((resolve) => setTimeout(resolve, 3400));
+      }
       if (qaView === 'studio' || qaView === 'lounge') {
         const digit = qaView === 'studio' ? '2' : '3';
         await window.webContents.executeJavaScript(
           `window.dispatchEvent(new KeyboardEvent('keydown', { altKey:true, code:'Digit${digit}', key:'${digit}', bubbles:true }))`,
         );
-        await new Promise((resolve) => setTimeout(resolve, 1400));
+        await new Promise((resolve) => setTimeout(resolve, 3400));
       }
       if (qaView === 'tray' || qaView === 'compact') {
         await window.webContents.executeJavaScript(
@@ -175,12 +206,21 @@ function createWindow() {
         await window.webContents.executeJavaScript(`(() => { const input=document.querySelector('[aria-label="Quick Access"] input'); if(!input)return; const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set; setter.call(input,'> integrations'); input.dispatchEvent(new Event('input',{bubbles:true})); input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})); })()`);
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
+      if (qaView === 'customize' || qaView === 'workspace') {
+        const command = qaView === 'customize' ? '> customize current room' : '> manage browser workspaces';
+        await window.webContents.executeJavaScript(`window.dispatchEvent(new KeyboardEvent('keydown', { ctrlKey:true, key:'k', bubbles:true }))`);
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        await window.webContents.executeJavaScript(`(() => { const input=document.querySelector('[aria-label="Quick Access"] input'); if(!input)return; const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set; setter.call(input,${JSON.stringify(command)}); input.dispatchEvent(new Event('input',{bubbles:true})); input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})); })()`);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
       if (qaView === 'edit') {
         await window.webContents.executeJavaScript(
           `Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Edit')?.click()`,
         );
         await new Promise((resolve) => setTimeout(resolve, 900));
       }
+      await window.webContents.executeJavaScript(`window.__WEBBURROW_RESET_METRICS__?.()`);
+      await new Promise((resolve) => setTimeout(resolve, 2200));
       if (screenshotPath) {
         const image = await window.webContents.capturePage();
         fs.mkdirSync(path.dirname(screenshotPath), { recursive: true });
@@ -199,9 +239,11 @@ function createWindow() {
         throw new Error('Hidden-window work did not pause.');
       }
       console.log('WEBBURROW_DESKTOP_SMOKE_OK');
+      writeSmokeResult('complete',{metrics,hiddenMetrics});
       app.exit(0);
     } catch (error) {
       console.error('WEBBURROW_DESKTOP_SMOKE_FAILED', error);
+      writeSmokeResult('failed',{message:String(error?.message||error)});
       app.exit(1);
     }
   });
@@ -237,6 +279,7 @@ if (nativeHostLaunch) {
   });
 
   app.whenReady().then(() => {
+    writeSmokeResult('app-ready');
     Menu.setApplicationMenu(null);
     if (process.defaultApp && process.argv[1]) app.setAsDefaultProtocolClient('webburrow', process.execPath, [path.resolve(process.argv[1])]);
     else app.setAsDefaultProtocolClient('webburrow');

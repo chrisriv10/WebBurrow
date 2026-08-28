@@ -53,9 +53,20 @@ export function validatePlacement(
 export function firstValidPlacement(roomId:string,archetype:Archetype,objects:BookmarkObject[],template:RoomTemplate='den'):[number,number,number] {
   const layout=ROOM_LAYOUTS[template];const mount=defaultMount(template,archetype);
   const candidates:[number,number,number][]=[...(mount?[[mount.position[0],0,mount.position[2]] as [number,number,number]]:[]),[-3,0,-4],[3,0,-4],[-3.5,0,0],[3.5,0,0],[-4,0,3],[4,0,3],[0,0,2.5],[-1.5,0,-2],[1.5,0,-2]];
+  for(let z=layout.bounds.minZ+1;z<=layout.bounds.maxZ-1;z+=1.25)for(let x=layout.bounds.minX+1;x<=layout.bounds.maxX-1;x+=1.25)candidates.push([snapValue(x,.25),0,snapValue(z,.25)]);
   const roomObjects=objects.filter(object=>object.roomId===roomId);
   const probe={id:'__placement-probe',roomId,archetype};
   return candidates.find(position=>validatePlacement(probe,position,roomObjects,template).valid)??[Math.max(layout.bounds.minX+1,0),0,2.5];
+}
+
+export function sessionWorkspacePlacement(index:number,template:RoomTemplate='studio'):[number,number,number]{
+  const layout=ROOM_LAYOUTS[template];const candidates:[number,number,number][]=[];
+  for(let z=layout.bounds.minZ+.7;z<=layout.bounds.maxZ-.7;z+=1.05)for(let x=layout.bounds.minX+.7;x<=layout.bounds.maxX-.7;x+=1.05){
+    if(Math.hypot(x-layout.portal[0],z-layout.portal[2])<1.65||Math.hypot(x-layout.spawn[0],z-layout.spawn[2])<1.45)continue;
+    if(layout.obstacles.some(obstacle=>Math.abs(x-obstacle.x)<obstacle.width/2+.38&&Math.abs(z-obstacle.z)<obstacle.depth/2+.38))continue;
+    candidates.push([snapValue(x,.05),0,snapValue(z,.05)]);
+  }
+  return candidates[index%candidates.length]??[0,0,0];
 }
 
 export function interactionPoint(object:BookmarkObject,template:RoomTemplate='den'):[number,number,number] {

@@ -11,6 +11,7 @@ import { PlayerController } from './player-controller';
 import { RoomEnvironment } from './room-environment';
 import { BurrowPortal } from './portal';
 import { WebsiteObject } from './website-object';
+import { SessionObjectField } from './session-object-field';
 import { LiveWidget } from './live-widget';
 import { integrationAdapters } from '@/lib/integrations/registry';
 import { ROOM_LAYOUTS } from '@/lib/room-layouts';
@@ -40,6 +41,7 @@ function Scene({onLockChange}:{onLockChange:(locked:boolean)=>void}) {
   const roomIndex=room?rooms.findIndex(item=>item.id===room.id):0;
   const destination=rooms[(roomIndex+1)%rooms.length]??room;
   const roomObjects=useMemo(()=>objects.filter(object=>object.roomId===room?.id),[objects,room?.id]);
+  const compactSession=Boolean(!editMode&&room?.purpose==='browser-session'&&roomObjects.length>28);
   const liveWidgets=useMemo(()=>integrationAdapters.flatMap(adapter=>adapter.toWorldWidgets(integrationCache.filter(item=>item.integrationId===adapter.id))).slice(0,4),[integrationCache]);
 
   useEffect(()=>{
@@ -63,7 +65,7 @@ function Scene({onLockChange}:{onLockChange:(locked:boolean)=>void}) {
     raycaster.setFromCamera(center,camera);
     const hits=raycaster.intersectObjects(scene.children,true);
     let interaction:string|null=null;
-    for(const hit of hits){let target=hit.object;while(target&&!target.userData.interactionId&&target.parent)target=target.parent;if(target?.userData.interactionId){interaction=target.userData.interactionId as string;break;}}
+    for(const hit of hits){let target=hit.object;while(target&&!target.userData.interactionId&&!target.userData.sessionObjectIds&&target.parent)target=target.parent;if(target?.userData.interactionId){interaction=target.userData.interactionId as string;break;}const sessionObjectIds=target?.userData.sessionObjectIds as string[]|undefined;if(sessionObjectIds&&hit.instanceId!==undefined){interaction=sessionObjectIds[hit.instanceId]??null;break;}}
     if(interaction!==useBurrow.getState().nearObjectId)setNearObject(interaction);
   });
   if(!room||!destination)return null;
@@ -73,7 +75,7 @@ function Scene({onLockChange}:{onLockChange:(locked:boolean)=>void}) {
     <BurrowPortal room={room} destination={destination} near={nearObjectId==='__portal'} onTravel={()=>{if(!editMode)setCurrentRoom(destination.id);}}/>
     <mesh position={[0,.028,(layout.bounds.minZ+layout.bounds.maxZ)/2]} rotation={[-Math.PI/2,0,0]} onPointerMove={floorMove} onPointerUp={()=>setDragging(null)} onPointerLeave={()=>setDragging(null)} onPointerDown={()=>{if(editMode&&!dragging)setSelected(null);}}><planeGeometry args={[layout.bounds.maxX-layout.bounds.minX,layout.bounds.maxZ-layout.bounds.minZ]}/><meshBasicMaterial transparent opacity={0}/></mesh>
     {editMode&&<gridHelper args={[Math.max(layout.bounds.maxX-layout.bounds.minX,layout.bounds.maxZ-layout.bounds.minZ),32,'#5f8798','#273442']} position={[0,.035,(layout.bounds.minZ+layout.bounds.maxZ)/2]}/>}
-    {roomObjects.map(object=><WebsiteObject key={object.id} object={object} selected={object.id===selectedId} near={object.id===nearObjectId} onBeginDrag={id=>{beginObjectEdit(id);setDragging(id);}}/>)}
+    {compactSession?<SessionObjectField objects={roomObjects} selectedId={selectedId} nearObjectId={nearObjectId}/>:roomObjects.map(object=><WebsiteObject key={object.id} object={object} selected={object.id===selectedId} near={object.id===nearObjectId} onBeginDrag={id=>{beginObjectEdit(id);setDragging(id);}}/>)}
     {!editMode&&liveWidgets.map((widget,index)=>{const pinned=integrationObjects.find(item=>item.roomId===room.id&&(item.reference===widget.reference||item.kind===widget.kind));const defaults:Record<string,[number,number,number]>={'weather-window':[room.template==='lounge'?-4.7:3.5,0,layout.bounds.minZ+1.2],'calendar':[-2.2,0,layout.bounds.minZ+1.1],'github-repo':[room.template==='studio'?-3.5:2.5,0,-2.2],'feed':[room.template==='lounge'?4.2:-2.5,0,2.8]};return <LiveWidget key={widget.id} widget={widget} position={pinned?.position||defaults[widget.kind]||[index*2-3,0,0]} rotation={pinned?.rotation||0} near={nearObjectId===`__live:${widget.id}`}/>;})}
     <PlayerController room={room} enabled={!editMode&&locked}/><EditCameraRig active={editMode}/><PerformanceProbe physicsBodies={layout.obstacles.length+7}/>
     {editMode?<OrbitControls makeDefault target={[0,1,-1.2]} maxPolarAngle={Math.PI/2.08} minPolarAngle={.35} minDistance={6} maxDistance={21} enableDamping dampingFactor={.08}/>:<PointerLockControls makeDefault selector="#world-surface" onLock={()=>{setLocked(true);onLockChange(true);}} onUnlock={()=>{setLocked(false);onLockChange(false);}}/>}

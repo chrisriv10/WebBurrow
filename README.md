@@ -1,62 +1,109 @@
-# WebBurrow
+# WebBurrow 1.0.0
 
-WebBurrow is a playable, local-first spatial homepage. Websites become objects in distinctive rooms, while Quick Access and the compact Burrow Tray keep everyday navigation fast.
+**Your internet is a place.** WebBurrow is a local-first spatial homepage where websites become objects in cozy procedural rooms, while Quick Access and the Burrow Tray keep everyday navigation fast.
 
-The daily-use layer can optionally bring public GitHub repositories, manually selected Open-Meteo weather, local or subscribed iCalendar events, and text-only RSS/Atom feeds into Quick Access, the Burrow Tray, and physical room surfaces. Every integration starts disabled, loads cached data first, and can be inspected or disconnected in **Integrations & privacy**.
+![WebBurrow Home Den](docs/screenshots/home-den.png)
 
-## Run locally
+WebBurrow 1.0.0 ships as a web application, an unsigned Windows desktop application, and an optional unpacked companion for Chrome, Edge, and Brave. It has no account, backend, telemetry, arbitrary website embedding, or required cloud storage.
+
+## What is included
+
+- Three distinct low-poly layouts: Home Den, Developer Studio, and Media Lounge, plus customized rooms built from those templates.
+- Thirteen site archetypes with contextual floor, desk, shelf, media-wall, and wall mounting.
+- Keyboard-accessible site and room management, local bookmark/configuration import, collections, notes, favorites, recents, and safe placement editing.
+- Quick Access search across local sites, rooms, collections, temporary sessions, integrations, events, feeds, notifications, actions, and explicit web-search results.
+- Optional public GitHub, manually selected Open-Meteo weather, iCalendar, and text-only RSS/Atom integrations with offline cache fallback.
+- Mini Burrow with shared layout geometry and up to four configurable cards.
+- Optional session-only browser-tab workspaces delivered by a minimal-permission Chromium companion.
+- Optional Windows notification-area tray, validated `webburrow://` routes, and a hardened native-messaging bridge.
+- Muted-by-default generated UI/ambience audio and progressive, dismissible onboarding.
+
+| Developer Studio | Media Lounge |
+| --- | --- |
+| ![Developer Studio](docs/screenshots/developer-studio.png) | ![Media Lounge](docs/screenshots/media-lounge.png) |
+
+## Install on Windows
+
+The installer is intentionally not committed or published. Build it locally:
+
+```powershell
+npm install
+npm run desktop:dist
+```
+
+The output is `release/WebBurrow-Setup-1.0.0-x64.exe`. It installs per user, offers an install-directory choice, creates Desktop and Start Menu shortcuts using the supplied WebBurrow artwork, registers the `webburrow://` protocol, and registers the exact companion native-host origin for Chrome, Edge, and Brave. Because it is unsigned, Windows may show a SmartScreen warning.
+
+For an unpacked desktop build, run `npm run desktop:pack`. See [Windows and source build instructions](docs/building.md).
+
+## Run from source
+
+Requires Node.js 22.13 or newer.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open the local URL shown by the development server. Use WASD and the mouse to explore, hold `Shift` to sprint, press `Space` to jump, and use `E` on nearby sites, the pocket note, favorites rack, or Burrow Lift. `Ctrl+K` or `/` opens Quick Access, `T` opens the Burrow Tray, `Alt+1/2/3` jumps between the starter rooms, and `Home` returns to a safe position.
+Use the local URL printed by the development server. Websites always open in the system browser or a new isolated tab; they are never iframed.
 
-Quick Access searches sites, rooms, collections, favorites, recents, events, feed items, integration content, temporary browser tabs, notifications, and commands. Prefix commands with `>`, or use `g query`, `yt query`, and `gh query`. Plain unmatched text shows an explicit web-search choice and never launches automatically. DuckDuckGo is the default provider.
+## Controls
 
-Edit mode provides an isometric room view with half-meter snapping, collision-aware dragging, 45-degree rotation, duplication, room reassignment, undo, and safe-placement recovery. Site records can include a collection and pinned note. Netscape bookmark HTML and versioned WebBurrow JSON are parsed and validated locally before changes are applied.
+| Input | Action |
+| --- | --- |
+| `W A S D` | Move |
+| Mouse | Look around |
+| `Shift` | Gentle sprint |
+| `Space` | Jump |
+| `E` | Use a nearby object or live surface |
+| `Ctrl+K` or `/` | Quick Access |
+| `T` | Burrow Tray |
+| `Alt+1/2/3` | Travel to starter rooms |
+| `Home` | Return to a safe spawn |
+| `Esc` | Release mouse look / close dialog |
 
-## Windows application
+Every important workflow is also available through accessible HTML controls without first-person movement. Small windows default to a companion layout instead of attempting mouse-look gameplay.
 
-Build a local Windows installer with:
+![Quick Access](docs/screenshots/quick-access.png)
 
-```bash
-npm run desktop:dist
-```
+Quick Access keeps local fuzzy results first. Use `> command`, `g query`, `yt query`, or `gh query`. Plain unmatched text only shows an explicit web-search result; it never launches automatically. DuckDuckGo is the default provider.
 
-The unsigned NSIS artifact is written to `release/WebBurrow-Setup-0.1.0.exe`. It installs per user, offers an installation-directory choice, and creates Desktop and Start Menu shortcuts. Build an unpacked application for development smoke testing with `npm run desktop:pack`, or run the desktop build directly with `npm run desktop:preview`. The build script stages Electron under Windows Temp to avoid protected-folder and antivirus rename races, then copies only the completed artifacts into `release`.
-
-The installed app uses the same local IndexedDB-backed data model as the browser build. External sites are handed to the Windows default browser after the same `http`/`https` validation used in the web experience. The renderer is bundled into a minimal dependency-free desktop package; no local server is required after installation.
-
-The installer also registers the local `webburrow://` protocol and the per-user `com.webburrow.desktop` native-messaging host for Chrome, Edge, and Brave. Uninstall removes those registrations. The optional Windows notification-area tray is disabled until enabled under **Integrations & privacy**; “keep available” and “minimize to tray” are separate settings.
-
-## Chromium companion
-
-Build the unpacked Manifest V3 extension with:
+## Browser companion
 
 ```bash
 npm run extension:build
 ```
 
-Load `browser-extension/dist` as an unpacked extension in Chrome, Edge, or Brave. Its stable development ID is `igfepplhdmogifjmgfligakhgoacflhg`, matching the installer’s native-host allowlist. It always has only `activeTab`, `storage`, and `nativeMessaging`; `tabs` and `bookmarks` are requested only when their popup actions are used. It has no history, cookie, content-script, or broad host access.
+Load `browser-extension/dist` as an unpacked extension in Chrome, Edge, or Brave. It can add the active page, send selected tabs/a window/a tab group into a temporary workspace, or preview chosen bookmarks for the existing local import flow. Required permissions are only `activeTab`, `storage`, and `nativeMessaging`; `tabs`, `tabGroups`, and `bookmarks` are requested when their matching feature is used.
 
-The popup can add the current page, turn selected tabs into a visibly temporary session room, or send a local bookmark preview into WebBurrow’s existing selection and room-mapping flow. Session rooms, collections, and objects are removed on the next launch unless explicitly kept. When opening a saved site, the desktop app asks a connected companion with tabs permission to focus the normalized URL first, then falls back within a short timeout to the system browser.
+![Temporary browser workspace](docs/screenshots/browser-workspace.png)
 
-Validated deep links are limited to `show`, `quick-access`, `room/<id>`, `open/<object-id>`, and `add` with safe HTTP(S) prefill. Deep links never save automatically or accept file paths, shell commands, or arbitrary launch URLs.
+Temporary workspaces never enter IndexedDB or configuration exports and disappear on the next launch unless explicitly promoted. See [browser companion setup and permissions](docs/browser-companion.md).
 
 ## Integrations and privacy
 
-- GitHub reads public REST data for at most five configured `owner/repository` names, honors cached ETags, refreshes hourly, and needs no token.
-- Weather uses a city selected through Open-Meteo geocoding—never device location—and refreshes every 20 minutes.
-- Calendar imports local `.ics`, supports local events, and refreshes chosen HTTPS subscriptions every 30 minutes. Recurrence expansion is bounded to 90 days and 500 events.
-- Feeds accept up to ten HTTPS RSS/Atom sources. Only text titles, source, date, read state, and validated article URLs are retained; HTML and XML entities are never rendered.
+All integrations start disabled and make no request before explicit configuration.
 
-Web builds make only the direct CORS-enabled HTTPS requests you configure. Desktop requests pass through discriminated preload operations with host allowlists, HTTPS enforcement, DNS/private-network rejection, redirect revalidation, MIME and size limits, and timeouts. Caches, temporary tabs, errors, bridge tokens, and secrets are excluded from configuration exports. See [PRIVACY_AND_SECURITY.md](PRIVACY_AND_SECURITY.md).
+- GitHub reads public repository data for up to five repositories, honors ETags, and refreshes hourly.
+- Weather uses a city you select manually and never requests device location.
+- Calendar supports local `.ics`, local events, and chosen HTTPS feeds with bounded recurrence expansion.
+- RSS/Atom stores text-only headlines and safe article URLs; remote HTML is never rendered.
+
+Web requests depend on the remote source’s CORS policy. Desktop requests use adapter-specific HTTPS operations with public-address pinning, redirect revalidation, MIME/size limits, and timeouts. Explicit favicon retrieval is same-origin, capped at 64 KiB, re-encoded to at most 64×64, locally cached, and excluded from exports.
+
+See [privacy and security](PRIVACY_AND_SECURITY.md) for the complete boundary model.
+
+## Architecture
+
+- React 19, TypeScript, Vite/vinext, React Three Fiber, Drei, Rapier, Zustand, Dexie, Zod, and ICAL.js.
+- A kinematic capsule controller owns frame-by-frame movement without publishing player telemetry through React.
+- One shared room-layout registry drives world colliders, placement/mounting, migration, and the 2D Mini Burrow.
+- Integration adapters return serializable search/tray/world view models; an isolated runtime handles cache-first refresh and stale fallback.
+- Electron uses a sandboxed renderer, context isolation, a purpose-built preload, and discriminated privileged operations.
 
 ## Verify
 
 ```bash
+npm run lint
 npm run typecheck
 npm test
 npm run build
@@ -64,6 +111,14 @@ npm run desktop:build
 npm run extension:build
 ```
 
-The desktop smoke harness also supports `--smoke-test`, `--screenshot=<absolute-path>`, and focused `--qa-view=studio|lounge|tray|launcher|edit|add|data|compact` arguments when launched through Electron. It fails if startup remains on the loader or the renderer logs an error.
+The desktop smoke harness checks startup, preload availability, renderer console errors, selected release views, performance counters, and hidden-window suspension. Full release steps are documented in [docs/building.md](docs/building.md).
 
-All bookmark, room, preference, note, usage, integration configuration, and cached public data stays in the browser's IndexedDB. Websites open externally; they are never embedded. No account, backend, telemetry, authenticated integration, or OS notification service is included.
+## Known limitations
+
+- Windows is the supported desktop target; the browser experience is desktop-first and touch gameplay is not implemented.
+- The installer is unsigned, and the companion must be loaded manually rather than from a browser store.
+- Web feed/calendar access works only when the source permits browser CORS; the desktop app provides the hardened transport.
+- GitHub is public-only. There are no accounts, authenticated integrations, cloud sync, multiplayer, AI features, code signing, telemetry, or OS notifications.
+- The 3D bundle is deliberately lazy-loaded but remains large because Three.js/Rapier are substantial dependencies.
+
+See [the 1.0.0 release notes](docs/releases/1.0.0.md), [CHANGELOG.md](CHANGELOG.md), and [THIRD_PARTY_ASSETS.md](THIRD_PARTY_ASSETS.md).

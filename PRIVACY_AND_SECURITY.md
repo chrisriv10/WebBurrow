@@ -1,25 +1,40 @@
 # Privacy and security model
 
-WebBurrow is a single-device application. It has no account, backend, telemetry, analytics, advertising, remote favicon lookup, or arbitrary website embedding. Permanent records and optional public integration caches are stored in IndexedDB. Configuration exports deliberately omit caches, temporary browser sessions, errors, native bridge state, and secrets.
+WebBurrow is a local-first, single-device application. It has no account, backend, telemetry, analytics, advertising, arbitrary website embedding, or automatic bookmark harvesting. Permanent records and optional public-integration caches live in IndexedDB. Portable exports exclude caches, errors, notifications, native bridge state, secrets, favicon blobs, temporary workspaces, and browser tab/window/group identity.
 
 ## Network boundary
 
-All integrations are disabled by default. The web build uses direct HTTPS requests only after explicit configuration and therefore depends on the source’s CORS policy. The Electron renderer cannot make generic privileged requests. Its sandboxed preload exposes a discriminated integration operation for GitHub, weather, calendar, or feeds. The main process enforces HTTPS, exact GitHub/Open-Meteo hosts, DNS and private-network rejection for subscriptions, redirect revalidation, a ten-second timeout, adapter MIME allowlists, and bounded response sizes.
+All integrations start disabled and make no request before explicit configuration. Web builds make direct CORS-enabled HTTPS requests. The Electron renderer cannot issue a generic privileged fetch: its sandboxed preload exposes discriminated GitHub, weather, calendar, feed, and favicon operations.
 
-GitHub support is public-only and stores no token. Weather requires a manually chosen city and never asks for device location. Calendar and feed URLs must use HTTPS. Feed parsing rejects DTD/entity declarations and never renders remote HTML.
+Desktop subscription requests use streaming HTTPS with the validated public IP pinned for the connection. Every redirect is resolved and revalidated. TLS hostname checks remain enabled. Operations enforce adapter host/path rules, public-address rejection for private/link-local/loopback targets, timeouts, MIME allowlists, and byte limits. GitHub is public-only and stores no token. Weather uses a manually selected city and never device location. Feed parsing rejects DTD/entity declarations and never renders remote HTML.
+
+Cached results load first and remain available with a stale/offline label after a failed refresh. Refresh timers pause while offline or hidden and one due refresh runs when the app becomes visible. Users can disconnect an adapter to clear its configuration and cache, or reset the complete local Burrow from the data surface.
+
+## Favicon consent and cache
+
+Icons are never harvested automatically from imported bookmarks. A favicon enters WebBurrow only when:
+
+- the user explicitly selects **Include page icon** in the companion, after bounded raster validation and local re-encoding; or
+- the user invokes **Fetch icon** for an already saved site in the desktop app.
+
+Desktop icon fetching is restricted to the saved page’s public HTTPS origin, permits only same-origin redirects and supported image MIME types, caps responses at 64 KiB, and re-encodes locally to at most 64×64. At most 100 recent icon blobs are kept in the separate `siteIcons` cache. They are excluded from exports and removed by local-data reset.
 
 ## Browser companion boundary
 
-The Manifest V3 companion has required `activeTab`, `storage`, and `nativeMessaging` permissions. `tabs` and `bookmarks` are optional and requested only for the matching popup action. There is no history permission, cookie access, content script, or host permission.
+The Manifest V3 companion always has only `activeTab`, `storage`, and `nativeMessaging`. It requests `tabs`, `tabGroups`, and `bookmarks` at runtime for their matching explicit actions. It has no history permission, cookie access, content script, or broad host permission.
 
-The Windows installer registers one native host for the pinned extension origin. Chrome’s length-prefixed messages are size-capped and validated against an allowlisted union. The host forwards them over a current-user named pipe authenticated by a randomly generated installation token encrypted with Electron/Windows protected storage. Tab batches are capped at 100 and only HTTP(S) pages are accepted. Browsing payloads are never placed in command-line arguments or exposed through a localhost server.
+The Windows installer registers one native host for the pinned extension origin. Native messages are length-prefixed, size-capped, replay-checked, and validated against an allowlisted schema with unknown fields rejected. Transfers are capped at 100 safe HTTP(S) tabs. The host forwards messages over a current-user named pipe authenticated with a random installation token protected by Electron safe storage/Windows DPAPI. Browsing payloads are never placed in command-line arguments or exposed through a localhost server.
+
+Temporary browser workspaces and tab/window/group identifiers live only in the active renderer session. They are never written to Dexie or exports and disappear on the next launch unless the user explicitly promotes selected items or keeps the whole room. Promotion strips browser-session metadata.
 
 ## Desktop boundary
 
-Electron keeps `contextIsolation`, renderer sandboxing, and `nodeIntegration: false`. The preload exposes only integration requests, sanitized tray preferences/menu summaries, safe external opening, and allowlisted commands. Favorite/recent native tray entries contain only an ID, short display name, and validated HTTP(S) URL.
+Electron uses `contextIsolation: true`, `sandbox: true`, and `nodeIntegration: false`. Navigation is blocked and safe HTTP(S) destinations are delegated externally. The preload exposes only discriminated integration requests, explicit icon retrieval, safe external opening, sanitized tray preferences/menu summaries, browser-context summaries, and allowlisted app commands.
 
-Deep links are allowlisted and syntactically validated. An `add` deep link can prefill a safe web URL but never saves it automatically. Local paths, credentials, commands, and non-HTTP(S) URL parameters are rejected.
+The optional Windows tray is disabled by default. Favorite/recent tray entries contain only an ID, short display name, and validated HTTP(S) URL. Closing hides instead of quits only after **Keep WebBurrow available in the Windows tray** is enabled; minimize-to-tray is a separate opt-in.
+
+Deep links are limited to `show`, `quick-access`, `room/<id>`, `open/<object-id>`, and `add` with a safe HTTP(S) prefill. They cannot save automatically, accept local paths, execute commands, or carry arbitrary launch URLs.
 
 ## Deliberate limitations
 
-The Windows installer and extension are unsigned development artifacts and are not store-published. Public feed/calendar sources may still reveal the client IP address to the chosen host when refreshed. GitHub’s unauthenticated REST rate limits apply. Web builds cannot bypass CORS. OS notifications, authenticated integrations, remote synchronization, and social sharing are intentionally absent.
+The Windows installer is unsigned and the extension is manually loaded rather than store-published. Chosen feed/calendar/weather/GitHub hosts see normal network metadata such as the client IP address. Web builds cannot bypass CORS. GitHub’s unauthenticated REST limits apply. OS notifications, authenticated integrations, accounts, cloud synchronization, telemetry, and social sharing are intentionally absent.
