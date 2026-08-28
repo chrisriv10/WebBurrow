@@ -17,6 +17,7 @@
     "desktop:preview": "npm run desktop:build && electron .",
     "desktop:pack": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-desktop.ps1 -Target dir",
     "desktop:dist": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-desktop.ps1 -Target nsis",
+    "extension:build": "node scripts/build-extension.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern dist-desktop --ignore-pattern desktop/dist --ignore-pattern .next",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
@@ -68,6 +69,7 @@
   "build": {
     "appId": "com.webburrow.desktop",
     "productName": "WebBurrow",
+    "protocols": [{ "name": "WebBurrow", "schemes": ["webburrow"] }],
     "asar": true,
     "beforeBuild": "desktop/skip-dependencies.cjs",
     "directories": {
@@ -76,6 +78,9 @@
     },
     "files": [
       "main.mjs",
+      "preload.cjs",
+      "security.mjs",
+      "native-messaging.mjs",
       "icon.png",
       "dist/**/*",
       "package.json"
@@ -93,6 +98,7 @@
       "artifactName": "WebBurrow-Setup-${version}.${ext}"
     },
     "nsis": {
+      "include": "build/installer.nsh",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,

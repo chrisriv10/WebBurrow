@@ -1,0 +1,21 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { contextBridge, ipcRenderer } = require('electron');
+
+const allowedCommands = new Set([
+  'show', 'quick-access', 'add', 'toggle-tray', 'favorites', 'recent',
+  'room', 'open-object', 'browser-page', 'browser-tabs', 'bookmark-preview', 'visibility',
+]);
+
+contextBridge.exposeInMainWorld('webburrowDesktop', Object.freeze({
+  requestIntegration: (request) => ipcRenderer.invoke('webburrow:integration-request', request),
+  setTrayPreferences: (preferences) => ipcRenderer.send('webburrow:tray-preferences', preferences),
+  syncTrayMenu: (snapshot) => ipcRenderer.send('webburrow:tray-snapshot', snapshot),
+  openExternal: (url) => ipcRenderer.invoke('webburrow:open-external', url),
+  onCommand: (callback) => {
+    const listener = (_event, command) => {
+      if (command && allowedCommands.has(command.type)) callback(command);
+    };
+    ipcRenderer.on('webburrow:command', listener);
+    return () => ipcRenderer.removeListener('webburrow:command', listener);
+  },
+}));

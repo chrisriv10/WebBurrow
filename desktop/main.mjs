@@ -1,7 +1,9 @@
-import { app, BrowserWindow, Menu, shell } from 'electron';
+import { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, shell } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { hardenedIntegrationRequest, isSafeExternalUrl, parseDeepLink } from './security.mjs';
+import { runNativeHostClient, startNativeMessageServer } from './native-messaging.mjs';
 
 const appDirectory = path.dirname(fileURLToPath(import.meta.url));
 const isSmokeTest = process.argv.includes('--smoke-test');
@@ -14,19 +16,55 @@ const qaViewArgument = process.argv.find((argument) =>
 );
 const qaView = qaViewArgument?.slice('--qa-view='.length);
 const rendererPath = path.join(appDirectory, 'dist', 'index.html');
+const nativeHostLaunch = process.argv.some(value => value.startsWith('chrome-extension://'));
+let mainWindow;
+let nativeTray;
+let trayPreferences = { enabled:false, minimizeToTray:false };
+let traySnapshot = { favorites:[], recent:[] };
+let quitting = false;
+let pendingCommand = null;
 
 if (process.platform === 'win32') {
   app.setAppUserModelId('com.webburrow.desktop');
 }
 
-function isSafeExternalUrl(value) {
-  try {
-    const url = new URL(value);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
-    return false;
-  }
+function sendCommand(command) {
+  if (!command) return;
+  if (!mainWindow || mainWindow.webContents.isLoading()) { pendingCommand = command; return; }
+  mainWindow.webContents.send('webburrow:command', command);
 }
+
+function showWindow(command) {
+  if (!mainWindow) mainWindow = createWindow();
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show(); mainWindow.focus();
+  if (command) sendCommand(command);
+}
+
+function sanitizedMenuItems(items) {
+  if (!Array.isArray(items)) return [];
+  return items.slice(0, 8).flatMap(item => item && typeof item.name === 'string' && typeof item.url === 'string' && isSafeExternalUrl(item.url)
+    ? [{ id:String(item.id).slice(0,100), name:item.name.slice(0,80), url:item.url }] : []);
+}
+
+function rebuildTray() {
+  if (!trayPreferences.enabled) { nativeTray?.destroy(); nativeTray = undefined; return; }
+  if (!nativeTray) { nativeTray = new Tray(nativeImage.createFromPath(path.join(appDirectory, 'icon.png'))); nativeTray.setToolTip('WebBurrow'); nativeTray.on('double-click', () => showWindow({ type:'show' })); }
+  const linkMenu = (items) => items.length ? items.map(item => ({ label:item.name, click:() => void shell.openExternal(item.url) })) : [{ label:'Nothing here yet', enabled:false }];
+  nativeTray.setContextMenu(Menu.buildFromTemplate([
+    { label:'Open WebBurrow', click:() => showWindow({ type:'show' }) },
+    { label:'Quick Access', click:() => showWindow({ type:'quick-access' }) },
+    { label:'Add URL', click:() => showWindow({ type:'add', payload:{} }) },
+    { label:'Toggle Mini Burrow', click:() => showWindow({ type:'toggle-tray' }) },
+    { type:'separator' },
+    { label:'Favorites', submenu:linkMenu(traySnapshot.favorites) },
+    { label:'Recent', submenu:linkMenu(traySnapshot.recent) },
+    { type:'separator' },
+    { label:'Quit', click:() => { quitting = true; app.quit(); } },
+  ]));
+}
+
+function deepLinkFromArguments(argumentsList) { return argumentsList.map(value => parseDeepLink(value)).find(Boolean) || null; }
 
 function createWindow() {
   const rendererErrors = [];
@@ -44,8 +82,13 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      preload: path.join(appDirectory, 'preload.cjs'),
     },
   });
+
+  window.on('close', event => { if (!quitting && trayPreferences.enabled) { event.preventDefault(); window.hide(); sendCommand({ type:'visibility', payload:false }); } });
+  window.on('minimize', event => { if (trayPreferences.enabled && trayPreferences.minimizeToTray) { event.preventDefault(); window.hide(); sendCommand({ type:'visibility', payload:false }); } });
+  window.on('show', () => sendCommand({ type:'visibility', payload:true }));
 
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (isSafeExternalUrl(url)) void shell.openExternal(url);
@@ -77,6 +120,7 @@ function createWindow() {
   });
 
   window.webContents.once('did-finish-load', async () => {
+    if (pendingCommand) { sendCommand(pendingCommand); pendingCommand = null; }
     if (!isSmokeTest) return;
 
     try {
@@ -151,26 +195,36 @@ function createWindow() {
   return window;
 }
 
-if (!app.requestSingleInstanceLock() && !isSmokeTest) {
+ipcMain.handle('webburrow:integration-request', (_event, request) => hardenedIntegrationRequest(request));
+ipcMain.handle('webburrow:open-external', async (_event, url) => { if (!isSafeExternalUrl(url)) return false; await shell.openExternal(url, { activate:true }); return true; });
+ipcMain.on('webburrow:tray-preferences', (_event, value) => { trayPreferences = { enabled:value?.enabled === true, minimizeToTray:value?.minimizeToTray === true }; rebuildTray(); });
+ipcMain.on('webburrow:tray-snapshot', (_event, value) => { traySnapshot = { favorites:sanitizedMenuItems(value?.favorites), recent:sanitizedMenuItems(value?.recent) }; rebuildTray(); });
+
+if (nativeHostLaunch) {
+  app.whenReady().then(() => runNativeHostClient(app));
+} else if (!app.requestSingleInstanceLock() && !isSmokeTest) {
   app.quit();
 } else {
-  app.on('second-instance', () => {
-    const window = BrowserWindow.getAllWindows()[0];
-    if (!window) return;
-    if (window.isMinimized()) window.restore();
-    window.focus();
+  app.on('second-instance', (_event, argv) => {
+    showWindow(deepLinkFromArguments(argv) || { type:'show' });
   });
 
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
-    createWindow();
+    if (process.defaultApp && process.argv[1]) app.setAsDefaultProtocolClient('webburrow', process.execPath, [path.resolve(process.argv[1])]);
+    else app.setAsDefaultProtocolClient('webburrow');
+    mainWindow = createWindow();
+    pendingCommand = deepLinkFromArguments(process.argv);
+    startNativeMessageServer(app, message => {
+      showWindow(message.type === 'capabilities' ? { type:'show' } : message.type === 'send-page' ? { type:'browser-page', payload:message.page } : message.type === 'send-tabs' ? { type:'browser-tabs', payload:{ name:message.name, tabs:message.tabs } } : message.type === 'bookmark-preview' ? { type:'bookmark-preview', payload:message.html } : { type:'show' });
+    });
 
     app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+      if (BrowserWindow.getAllWindows().length === 0) mainWindow = createWindow(); else showWindow();
     });
   });
 
   app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') app.quit();
+    if (process.platform !== 'darwin' && !trayPreferences.enabled) app.quit();
   });
 }

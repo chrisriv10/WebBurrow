@@ -38,6 +38,7 @@ next-env.d.ts
 /desktop/dist/
 /release/
 /release-failed/
+/browser-extension/dist/
 /.wrangler/
 /outputs/
 /work/
