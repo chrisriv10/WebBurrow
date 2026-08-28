@@ -19,6 +19,6 @@ export async function requestIntegration(input:IntegrationRequest):Promise<Integ
     const response=await fetch(requestUrl(request),{signal:controller.signal,credentials:'omit',redirect:'follow',headers:{Accept:request.kind==='github'?'application/vnd.github+json':request.kind==='calendar'?'text/calendar, text/plain;q=.8':'application/json, application/xml, text/xml;q=.8',...(etag?{'If-None-Match':etag}:{})}});
     if(response.status===304)return{status:304,body:'',contentType:response.headers.get('content-type')||'',etag,notModified:true};
     const buffer=await response.arrayBuffer();if(buffer.byteLength>LIMITS[request.kind])throw new Error('The remote response was too large.');
-    return{status:response.status,body:new TextDecoder().decode(buffer),contentType:response.headers.get('content-type')||'',etag:response.headers.get('etag')||undefined};
+    const remaining=Number(response.headers.get('x-ratelimit-remaining'));const reset=Number(response.headers.get('x-ratelimit-reset'));return{status:response.status,body:new TextDecoder().decode(buffer),contentType:response.headers.get('content-type')||'',etag:response.headers.get('etag')||undefined,rateLimit:Number.isFinite(remaining)&&Number.isFinite(reset)?{remaining,resetAt:reset*1000}:undefined};
   }finally{clearTimeout(timer);}
 }

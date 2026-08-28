@@ -23,6 +23,7 @@ let trayPreferences = { enabled:false, minimizeToTray:false };
 let traySnapshot = { favorites:[], recent:[] };
 let quitting = false;
 let pendingCommand = null;
+let nativeBridge;
 
 if (process.platform === 'win32') {
   app.setAppUserModelId('com.webburrow.desktop');
@@ -127,10 +128,10 @@ function createWindow() {
       window.showInactive();
       await new Promise((resolve) => setTimeout(resolve, 5000));
       const rendererState = await window.webContents.executeJavaScript(
-        `(async () => JSON.stringify({ text: document.body.innerText.slice(0, 500), databases: indexedDB.databases ? await indexedDB.databases() : [] }))()`,
+        `(async () => JSON.stringify({ text: document.body.innerText.slice(0, 500), databases: indexedDB.databases ? await indexedDB.databases() : [], desktopBridge:Boolean(window.webburrowDesktop) }))()`,
       );
       console.log(`WEBBURROW_DESKTOP_STATE ${rendererState}`);
-      if (JSON.parse(rendererState).text.includes('OPENING YOUR BURROW')) {
+      if (JSON.parse(rendererState).text.includes('OPENING YOUR BURROW') || !JSON.parse(rendererState).desktopBridge) {
         throw new Error('Renderer did not finish local persistence initialization.');
       }
       await window.webContents.executeJavaScript(
@@ -162,6 +163,12 @@ function createWindow() {
           `window.dispatchEvent(new KeyboardEvent('keydown', { ctrlKey:true, key:'k', bubbles:true }))`,
         );
         await new Promise((resolve) => setTimeout(resolve, 400));
+      }
+      if (qaView === 'integrations') {
+        await window.webContents.executeJavaScript(`window.dispatchEvent(new KeyboardEvent('keydown', { ctrlKey:true, key:'k', bubbles:true }))`);
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        await window.webContents.executeJavaScript(`(() => { const input=document.querySelector('[aria-label="Quick Access"] input'); if(!input)return; const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set; setter.call(input,'> integrations'); input.dispatchEvent(new Event('input',{bubbles:true})); input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})); })()`);
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
       if (qaView === 'edit') {
         await window.webContents.executeJavaScript(
@@ -196,7 +203,7 @@ function createWindow() {
 }
 
 ipcMain.handle('webburrow:integration-request', (_event, request) => hardenedIntegrationRequest(request));
-ipcMain.handle('webburrow:open-external', async (_event, url) => { if (!isSafeExternalUrl(url)) return false; await shell.openExternal(url, { activate:true }); return true; });
+ipcMain.handle('webburrow:open-external', async (_event, url) => { if (!isSafeExternalUrl(url)) return false;if(await nativeBridge?.focus(url))return true; await shell.openExternal(url, { activate:true }); return true; });
 ipcMain.on('webburrow:tray-preferences', (_event, value) => { trayPreferences = { enabled:value?.enabled === true, minimizeToTray:value?.minimizeToTray === true }; rebuildTray(); });
 ipcMain.on('webburrow:tray-snapshot', (_event, value) => { traySnapshot = { favorites:sanitizedMenuItems(value?.favorites), recent:sanitizedMenuItems(value?.recent) }; rebuildTray(); });
 
@@ -215,7 +222,7 @@ if (nativeHostLaunch) {
     else app.setAsDefaultProtocolClient('webburrow');
     mainWindow = createWindow();
     pendingCommand = deepLinkFromArguments(process.argv);
-    startNativeMessageServer(app, message => {
+    nativeBridge = startNativeMessageServer(app, message => {
       showWindow(message.type === 'capabilities' ? { type:'show' } : message.type === 'send-page' ? { type:'browser-page', payload:message.page } : message.type === 'send-tabs' ? { type:'browser-tabs', payload:{ name:message.name, tabs:message.tabs } } : message.type === 'bookmark-preview' ? { type:'bookmark-preview', payload:message.html } : { type:'show' });
     });
 

@@ -6,14 +6,14 @@ import type { CalendarEvent, FeedItem, IntegrationCache, IntegrationConfig } fro
 const repositorySchema=z.object({full_name:z.string(),html_url:z.string().url(),description:z.string().nullable(),stargazers_count:z.number(),open_issues_count:z.number(),updated_at:z.string()});
 const commitsSchema=z.array(z.object({sha:z.string(),html_url:z.string().url(),commit:z.object({message:z.string(),author:z.object({date:z.string().nullable()}).nullable()})}));
 const releaseSchema=z.object({name:z.string().nullable(),tag_name:z.string(),html_url:z.string().url(),published_at:z.string().nullable()});
-export type GitHubRepositoryData={fullName:string;url:string;description:string;stars:number;openWork:number;updatedAt:number;latestCommit?:{message:string;url:string;date:number};latestRelease?:{name:string;url:string;date:number}};
+export type GitHubRepositoryData={fullName:string;url:string;description:string;stars:number;openWork:number;updatedAt:number;rateLimit?:{remaining:number;resetAt:number};latestCommit?:{message:string;url:string;date:number};latestRelease?:{name:string;url:string;date:number}};
 export type WeatherCacheData=WeatherData&{location:string};
 export type CalendarCacheData={events:CalendarEvent[];warnings:string[]};
 export type FeedCacheData={items:FeedItem[];name:string};
 
 function parsedSettings(config:IntegrationConfig){return config.settings as Record<string,unknown>;}
 function cached<T>(cache:IntegrationCache[],key:string){return cache.find(item=>item.cacheKey===key)?.data as T|undefined;}
-async function json(context:RefreshContext,request:Parameters<RefreshContext['request']>[0]){const response=await context.request(request);if(response.status<200||response.status>=300)throw new Error(`Remote service returned ${response.status}.`);try{return{value:JSON.parse(response.body) as unknown,etag:response.etag};}catch{throw new Error('Remote service returned malformed JSON.');}}
+async function json(context:RefreshContext,request:Parameters<RefreshContext['request']>[0]){const response=await context.request(request);if(response.status===403&&response.rateLimit?.remaining===0)throw new Error(`GitHub rate limit exhausted until ${new Date(response.rateLimit.resetAt).toLocaleTimeString()}.`);if(response.status<200||response.status>=300)throw new Error(`Remote service returned ${response.status}.`);try{return{value:JSON.parse(response.body) as unknown,etag:response.etag,rateLimit:response.rateLimit};}catch{throw new Error('Remote service returned malformed JSON.');}}
 
 const github:IntegrationAdapter={
   id:'github',name:'GitHub',description:'Public repository activity, releases, and project status.',refreshMinutes:60,
@@ -28,14 +28,14 @@ const github:IntegrationAdapter={
       ]);
       if(repoResult.status==='rejected')throw repoResult.reason;
       const repo=repositorySchema.parse(repoResult.value.value);const commit=commitResult.status==='fulfilled'?commitsSchema.safeParse(commitResult.value.value):null;const release=releaseResult.status==='fulfilled'?releaseSchema.safeParse(releaseResult.value.value):null;
-      const data:GitHubRepositoryData={fullName:repo.full_name,url:repo.html_url,description:repo.description||'Public repository',stars:repo.stargazers_count,openWork:repo.open_issues_count,updatedAt:Date.parse(repo.updated_at),
+      const data:GitHubRepositoryData={fullName:repo.full_name,url:repo.html_url,description:repo.description||'Public repository',stars:repo.stargazers_count,openWork:repo.open_issues_count,updatedAt:Date.parse(repo.updated_at),rateLimit:repoResult.value.rateLimit,
         latestCommit:commit?.success&&commit.data[0]?{message:commit.data[0].commit.message.split('\n')[0].slice(0,160),url:commit.data[0].html_url,date:Date.parse(commit.data[0].commit.author?.date||'')}:undefined,
         latestRelease:release?.success?{name:release.data.name||release.data.tag_name,url:release.data.html_url,date:Date.parse(release.data.published_at||'')}:undefined};
       results.push({cacheKey:key,data,ttlMs:60*60_000,etag:repoResult.value.etag});
     }return results;
   },
   toSearchEntries:cache=>cache.filter(item=>item.cacheKey.startsWith('repo:')).flatMap(item=>{const data=item.data as GitHubRepositoryData;return data?.fullName?[{id:`github:${data.fullName}`,title:data.fullName,subtitle:`${data.stars} stars · ${data.openWork} open`,url:data.url,keywords:`github repository ${data.description||''}`}]:[];}),
-  toTrayCard:cache=>{const data=cache.filter(item=>item.cacheKey.startsWith('repo:')).map(item=>item.data as GitHubRepositoryData).find(Boolean);return data?{id:'github',kind:'github',title:'GitHub pulse',value:data.fullName,detail:data.latestCommit?.message||`${data.stars} stars · ${data.openWork} open`,tone:'violet'}:null;},
+  toTrayCard:cache=>{const data=cache.filter(item=>item.cacheKey.startsWith('repo:')).map(item=>item.data as GitHubRepositoryData).find(Boolean);return data?{id:'github',kind:'github',title:'GitHub pulse',value:data.fullName,detail:`${data.latestCommit?.message||`${data.stars} stars · ${data.openWork} open`}${data.rateLimit?` · ${data.rateLimit.remaining} API requests left`:''}`,tone:'violet'}:null;},
   toWorldWidgets:cache=>cache.filter(item=>item.cacheKey.startsWith('repo:')).map(item=>item.data as GitHubRepositoryData).filter(Boolean).map(data=>({id:`github:${data.fullName}`,kind:'github-repo',title:data.fullName,primary:data.latestCommit?.message||`${data.stars} stars`,secondary:`${data.openWork} open`,active:true,tone:'#8da2ff',reference:data.url})),
 };
 

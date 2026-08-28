@@ -23,7 +23,7 @@ function installationToken(app) {
 
 function validMessage(message) {
   if (!message || typeof message !== 'object' || typeof message.requestId !== 'string' || message.requestId.length > 100) return false;
-  if (!['capabilities','send-page','send-tabs','bookmark-preview','focus-or-open'].includes(message.type)) return false;
+  if (!['capabilities','send-page','send-tabs','bookmark-preview','focus-or-open','focus-or-open-result'].includes(message.type)) return false;
   if (message.type === 'send-tabs' && (!Array.isArray(message.tabs) || message.tabs.length < 1 || message.tabs.length > 100)) return false;
   if (message.type === 'bookmark-preview' && (typeof message.html !== 'string' || message.html.length > 2_000_000)) return false;
   const links = message.type === 'send-page' ? [message.page] : message.type === 'send-tabs' ? message.tabs : [];
@@ -31,9 +31,10 @@ function validMessage(message) {
 }
 
 export function startNativeMessageServer(app, dispatch) {
-  const { pipe } = locations(app); const token = installationToken(app);
+  const { pipe } = locations(app); const token = installationToken(app);const clients=new Set();const authenticatedClients=new Set();const pending=new Map();
   const server = net.createServer(socket => {
     let buffer = '';
+    clients.add(socket);socket.on('close',()=>{clients.delete(socket);authenticatedClients.delete(socket);});
     socket.setEncoding('utf8');
     socket.on('data', chunk => {
       buffer += chunk;
@@ -43,14 +44,16 @@ export function startNativeMessageServer(app, dispatch) {
         const line = buffer.slice(0, lineEnd); buffer = buffer.slice(lineEnd + 1);
         try {
           const envelope = JSON.parse(line);
-          if (envelope.token !== token || !validMessage(envelope.message)) throw new Error('Rejected message.');
+          if (envelope.token !== token || !validMessage(envelope.message)) throw new Error('Rejected message.');authenticatedClients.add(socket);
+          if(envelope.message.type==='focus-or-open-result'){const resolver=pending.get(envelope.message.requestId);pending.delete(envelope.message.requestId);resolver?.(envelope.message.handled===true);continue;}
           dispatch(envelope.message);
           socket.write(`${JSON.stringify({ requestId:envelope.message.requestId, ok:true })}\n`);
         } catch (error) { socket.write(`${JSON.stringify({ ok:false, error:{ code:'invalid-message', message:error.message } })}\n`); }
       }
     });
   });
-  server.on('error', () => {}); server.listen(pipe); return server;
+  server.on('error', () => {}); server.listen(pipe);
+  return {close:()=>server.close(),focus:url=>new Promise(resolve=>{const client=[...authenticatedClients].find(socket=>!socket.destroyed);if(!client)return resolve(false);const requestId=crypto.randomUUID();const timer=setTimeout(()=>{pending.delete(requestId);resolve(false);},850);pending.set(requestId,handled=>{clearTimeout(timer);resolve(handled);});client.write(`${JSON.stringify({type:'focus-or-open',requestId,url})}\n`);})};
 }
 
 function readNativeFrames(stream, onMessage) {
@@ -73,11 +76,8 @@ function writeNative(message) { process.stdout.write(encodeNativeMessage(message
 export function runNativeHostClient(app) {
   const origin = process.argv.find(value => value.startsWith('chrome-extension://'));
   if (origin !== ORIGIN) { writeNative({ ok:false, error:{ code:'origin-denied', message:'This extension is not allowed.' } }); return app.exit(1); }
-  const { pipe } = locations(app); const token = installationToken(app);
-  readNativeFrames(process.stdin, message => {
-    const socket = net.createConnection(pipe); let reply = '';
-    socket.setEncoding('utf8'); socket.once('connect', () => socket.write(`${JSON.stringify({ token, message })}\n`));
-    socket.on('data', chunk => { reply += chunk; const end = reply.indexOf('\n'); if (end >= 0) { try { writeNative(JSON.parse(reply.slice(0,end))); } catch { writeNative({ ok:false, error:{ code:'bridge-error', message:'Invalid desktop response.' } }); } socket.end(); } });
-    socket.on('error', () => { writeNative({ requestId:message?.requestId, ok:false, error:{ code:'not-running', message:'Open WebBurrow and try again.' } }); });
-  });
+  const { pipe } = locations(app); const token = installationToken(app);const socket=net.createConnection(pipe);let reply='';
+  socket.setEncoding('utf8');socket.on('data',chunk=>{reply+=chunk;for(;;){const end=reply.indexOf('\n');if(end<0)break;try{writeNative(JSON.parse(reply.slice(0,end)));}catch{writeNative({ok:false,error:{code:'bridge-error',message:'Invalid desktop response.'}});}reply=reply.slice(end+1);}});
+  socket.on('error',()=>writeNative({ok:false,error:{code:'not-running',message:'Open WebBurrow and try again.'}}));
+  readNativeFrames(process.stdin,message=>socket.write(`${JSON.stringify({token,message})}\n`));
 }

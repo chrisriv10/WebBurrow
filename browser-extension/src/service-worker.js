@@ -1,11 +1,11 @@
-const HOST = 'com.webburrow.desktop';
+const HOST = 'com.webburrow.desktop';let nativePort;const pending=new Map();
+
+function normalized(value){try{const url=new URL(value);url.hash='';if((url.protocol==='https:'&&url.port==='443')||(url.protocol==='http:'&&url.port==='80'))url.port='';url.protocol=url.protocol.toLowerCase();url.hostname=url.hostname.toLowerCase();return url.toString();}catch{return '';}}
+function connect(){if(nativePort)return nativePort;nativePort=chrome.runtime.connectNative(HOST);nativePort.onMessage.addListener(async response=>{if(response.type==='focus-or-open'){let handled=false;if((await chrome.permissions.contains({permissions:['tabs']}))&&/^https?:/.test(response.url)){const target=normalized(response.url);const tabs=await chrome.tabs.query({});const match=tabs.find(tab=>normalized(tab.url)===target);if(match?.id){await chrome.tabs.update(match.id,{active:true});if(match.windowId)await chrome.windows.update(match.windowId,{focused:true});handled=true;}nativePort?.postMessage({type:'focus-or-open-result',requestId:response.requestId,handled});}return;}const resolve=pending.get(response.requestId);if(resolve){pending.delete(response.requestId);resolve(response);}});nativePort.onDisconnect.addListener(()=>{nativePort=undefined;for(const resolve of pending.values())resolve({ok:false,error:{code:'connection',message:chrome.runtime.lastError?.message||'WebBurrow disconnected.'}});pending.clear();});return nativePort;}
 
 function sendNative(message) {
   return new Promise(resolve => {
-    chrome.runtime.sendNativeMessage(HOST, { requestId:crypto.randomUUID(), ...message }, response => {
-      if (chrome.runtime.lastError) resolve({ ok:false, error:{ code:'connection', message:chrome.runtime.lastError.message } });
-      else resolve(response || { ok:false, error:{ code:'empty', message:'No response from WebBurrow.' } });
-    });
+    const requestId=crypto.randomUUID();pending.set(requestId,resolve);try{connect().postMessage({requestId,...message});}catch(error){pending.delete(requestId);resolve({ok:false,error:{code:'connection',message:error.message}});}
   });
 }
 

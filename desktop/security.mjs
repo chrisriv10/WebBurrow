@@ -94,7 +94,7 @@ export async function hardenedIntegrationRequest(request, fetchImpl = fetch) {
       if (declared > MAX_BODY[request.kind]) throw new Error('The response is too large.');
       const bytes = new Uint8Array(await response.arrayBuffer());
       if (bytes.byteLength > MAX_BODY[request.kind]) throw new Error('The response is too large.');
-      return { status: response.status, body: new TextDecoder().decode(bytes), contentType: type, etag: response.headers.get('etag') || undefined };
+      const remaining=Number(response.headers.get('x-ratelimit-remaining'));const reset=Number(response.headers.get('x-ratelimit-reset'));return { status: response.status, body: new TextDecoder().decode(bytes), contentType: type, etag: response.headers.get('etag') || undefined, rateLimit:Number.isFinite(remaining)&&Number.isFinite(reset)?{remaining,resetAt:reset*1000}:undefined };
     }
   } finally { clearTimeout(timeout); }
   throw new Error('Request could not be completed.');

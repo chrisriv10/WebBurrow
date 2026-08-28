@@ -4,11 +4,12 @@ import { completeSnapshot, normalizeCollections } from './db';
 
 function permanentSnapshot(snapshot:Snapshot) {
   const rooms=snapshot.rooms.filter(room=>room.lifecycle==='permanent');const roomIds=new Set(rooms.map(room=>room.id));
+  const localCalendarIds=new Set(snapshot.calendarSources.filter(source=>source.kind==='local').map(source=>source.id));
   return {
     rooms,objects:snapshot.objects.filter(object=>object.lifecycle==='permanent'&&roomIds.has(object.roomId)),collections:snapshot.collections.filter(item=>item.lifecycle==='permanent'),
     activity:snapshot.activity,note:snapshot.note,preferences:snapshot.preferences,integrations:snapshot.integrations,
     integrationObjects:snapshot.integrationObjects.filter(item=>item.lifecycle==='permanent'&&roomIds.has(item.roomId)),calendarSources:snapshot.calendarSources,
-    calendarEvents:snapshot.calendarEvents,feedSources:snapshot.feedSources,feedItems:snapshot.feedItems,notifications:snapshot.notifications,
+    calendarEvents:snapshot.calendarEvents.filter(event=>localCalendarIds.has(event.sourceId)),feedSources:snapshot.feedSources,feedItems:[],notifications:[],
   };
 }
 

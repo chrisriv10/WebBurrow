@@ -30,4 +30,16 @@ describe('Burrow domain actions',()=>{
     useBurrow.getState().setTrayOpen(true);useBurrow.getState().setTrayPinned(true);useBurrow.getState().setReducedEffects(true);
     const preferences=useBurrow.getState().preferences;expect(preferences.recentSearches).toHaveLength(6);expect(preferences.recentSearches[0]).toBe('query 8');expect(preferences).toMatchObject({trayOpen:true,trayPinned:true,reducedEffects:true});
   });
+
+  it('creates temporary tab workspaces and can convert them permanently',()=>{
+    useBurrow.getState().receiveBrowserTabs('Focus set',[{title:'Docs',url:'https://example.com/docs'},{title:'Unsafe',url:'file:///C:/secret.txt'}]);
+    const room=useBurrow.getState().rooms.at(-1)!;expect(room.lifecycle).toBe('session');expect(useBurrow.getState().objects.filter(item=>item.roomId===room.id)).toHaveLength(1);
+    useBurrow.getState().keepSessionRoom(room.id);expect(useBurrow.getState().rooms.find(item=>item.id===room.id)?.lifecycle).toBe('permanent');expect(useBurrow.getState().objects.find(item=>item.roomId===room.id)?.lifecycle).toBe('permanent');
+  });
+
+  it('bounds and deduplicates local notifications',()=>{
+    for(let index=0;index<110;index++)useBurrow.getState().notify({kind:'info',title:`Notice ${index}`,body:'Local update',dedupeKey:`notice:${index}`});
+    useBurrow.getState().notify({kind:'warning',title:'Replacement',body:'Updated',dedupeKey:'notice:109'});
+    const notes=useBurrow.getState().notifications;expect(notes).toHaveLength(100);expect(notes.filter(item=>item.dedupeKey==='notice:109')).toHaveLength(1);expect(notes[0].title).toBe('Replacement');
+  });
 });

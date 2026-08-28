@@ -10,7 +10,7 @@ export const integrationRequestSchema = z.discriminatedUnion('kind',[
   z.object({kind:z.literal('rss'),url:httpsUrl,etag:z.string().max(200).optional()}),
 ]);
 export type IntegrationRequest=z.infer<typeof integrationRequestSchema>;
-export type IntegrationResponse={status:number;body:string;contentType:string;etag?:string;notModified?:boolean};
+export type IntegrationResponse={status:number;body:string;contentType:string;etag?:string;notModified?:boolean;rateLimit?:{remaining:number;resetAt:number}};
 
 export const browserTabSchema=z.object({id:z.number().int().optional(),title:z.string().max(200),url:webUrl});
 export const browserMessageSchema=z.discriminatedUnion('type',[
