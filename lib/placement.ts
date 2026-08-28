@@ -23,6 +23,8 @@ export function footprintFor(archetype:Archetype) {
   return FOOTPRINTS[archetype];
 }
 
+export function suggestedMount(template:RoomTemplate,archetype:Archetype,objects:BookmarkObject[]){const layout=ROOM_LAYOUTS[template];return layout.anchors.find(anchor=>anchor.accepts.includes(archetype)&&!objects.some(object=>object.mount?.surfaceId===anchor.id));}
+
 export function validatePlacement(
   object:Pick<BookmarkObject,'id'|'roomId'|'archetype'>,
   desired:[number,number,number],
@@ -50,7 +52,7 @@ export function validatePlacement(
 
 export function firstValidPlacement(roomId:string,archetype:Archetype,objects:BookmarkObject[],template:RoomTemplate='den'):[number,number,number] {
   const layout=ROOM_LAYOUTS[template];const mount=defaultMount(template,archetype);
-  const candidates:[number,number,number][]=[...(mount?[mount.position]:[]),[-3,0,-4],[3,0,-4],[-3.5,0,0],[3.5,0,0],[-4,0,3],[4,0,3],[0,0,2.5],[-1.5,0,-2],[1.5,0,-2]];
+  const candidates:[number,number,number][]=[...(mount?[[mount.position[0],0,mount.position[2]] as [number,number,number]]:[]),[-3,0,-4],[3,0,-4],[-3.5,0,0],[3.5,0,0],[-4,0,3],[4,0,3],[0,0,2.5],[-1.5,0,-2],[1.5,0,-2]];
   const roomObjects=objects.filter(object=>object.roomId===roomId);
   const probe={id:'__placement-probe',roomId,archetype};
   return candidates.find(position=>validatePlacement(probe,position,roomObjects,template).valid)??[Math.max(layout.bounds.minX+1,0),0,2.5];

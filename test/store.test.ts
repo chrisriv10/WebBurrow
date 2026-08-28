@@ -31,6 +31,13 @@ describe('Burrow domain actions',()=>{
     const preferences=useBurrow.getState().preferences;expect(preferences.recentSearches).toHaveLength(6);expect(preferences.recentSearches[0]).toBe('query 8');expect(preferences).toMatchObject({trayOpen:true,trayPinned:true,reducedEffects:true});
   });
 
+  it('applies curated room customization without replacing untouched appearance fields',()=>{
+    const room=DEMO_ROOMS[0];const original=room.appearance;
+    useBurrow.getState().customizeRoom(room.id,{name:'Quiet Den',accent:'#6dd7d7',appearance:{wall:'soft-slate',decor:'minimal'}});
+    expect(useBurrow.getState().rooms[0]).toMatchObject({name:'Quiet Den',accent:'#6dd7d7',appearance:{wall:'soft-slate',decor:'minimal',floor:original.floor,lighting:original.lighting}});
+    expect(useBurrow.getState().toast).toBe('Room style updated.');
+  });
+
   it('creates temporary tab workspaces and can convert them permanently',()=>{
     useBurrow.getState().receiveBrowserTabs('Focus set',[{title:'Docs',url:'https://example.com/docs'},{title:'Unsafe',url:'file:///C:/secret.txt'}]);
     const room=useBurrow.getState().rooms.at(-1)!;expect(room.lifecycle).toBe('session');expect(useBurrow.getState().objects.filter(item=>item.roomId===room.id)).toHaveLength(1);

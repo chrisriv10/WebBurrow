@@ -23,9 +23,9 @@ export const ROOM_LAYOUTS:Record<RoomTemplate,RoomLayoutDefinition>={
     anchors:[{id:'studio-left-desk',kind:'desk',position:[-5.35,1.05,-2.5],rotation:Math.PI/2,accepts:deskTypes},{id:'studio-right-desk',kind:'desk',position:[5.35,1.05,-2.5],rotation:-Math.PI/2,accepts:deskTypes},{id:'studio-display',kind:'wall',position:[0,1.5,-7.65],rotation:0,accepts:wallTypes},{id:'studio-shelf',kind:'shelf',position:[-6.35,1.3,3.3],rotation:Math.PI/2,accepts:shelfTypes}],
     miniFurniture:[{x:-5.8,z:-2.5,width:2.7,depth:5,kind:'desk'},{x:5.8,z:-2.5,width:2.7,depth:5,kind:'desk'},{x:-6.8,z:3.6,width:1.7,depth:2.6,kind:'utility'}]},
   lounge:{template:'lounge',bounds:{minX:-8,maxX:8,minZ:-7.5,maxZ:7},outline:[[-8,-7.5],[8,-7.5],[8,5.2],[6.2,7],[-6.2,7],[-8,5.2]],spawn:[0,1.1,5.8],portal:[0,0,-6.8],
-    obstacles:[{id:'sofa',x:0,z:1.5,width:5.2,depth:2.2},{id:'media-console',x:0,z:-5.8,width:5.8,depth:1.2},{id:'low-seat-left',x:-5.6,z:1.4,width:2,depth:2.2}],
+    obstacles:[{id:'sofa',x:-3.8,z:1.5,width:2.2,depth:5.2},{id:'media-console',x:0,z:-5.8,width:5.8,depth:1.2},{id:'low-seat-left',x:3.8,z:2.7,width:2.1,depth:2.2}],
     anchors:[{id:'lounge-media',kind:'media',position:[0,1.15,-5.55],rotation:0,accepts:['tv','wall-display','radio','arcade']},{id:'lounge-table',kind:'desk',position:[0,.6,-.4],rotation:0,accepts:['tablet','book','laptop','radio']},{id:'lounge-wall-left',kind:'wall',position:[-5.8,1.45,-5.9],rotation:0,accepts:wallTypes},{id:'lounge-shelf',kind:'shelf',position:[5.9,1.2,-2.8],rotation:-Math.PI/2,accepts:shelfTypes}],
-    miniFurniture:[{x:0,z:1.5,width:5,depth:2.1,kind:'sofa'},{x:0,z:-5.8,width:5.6,depth:1.1,kind:'media'},{x:-5.6,z:1.4,width:1.9,depth:2.1,kind:'seat'}]},
+    miniFurniture:[{x:-3.8,z:1.5,width:2.1,depth:5,kind:'sofa'},{x:0,z:-5.8,width:5.6,depth:1.1,kind:'media'},{x:3.8,z:2.7,width:2,depth:2.1,kind:'seat'}]},
 };
 
 export function layoutFor(room:Pick<Room,'template'>|RoomTemplate){return ROOM_LAYOUTS[typeof room==='string'?room:room.template];}

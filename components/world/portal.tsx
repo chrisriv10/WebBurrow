@@ -6,6 +6,7 @@ import { RoundedBox, Text } from '@react-three/drei';
 import type { Group } from 'three';
 import type { Room } from '@/lib/types';
 import { localAsset, threeText } from '@/lib/assets';
+import { ROOM_LAYOUTS } from '@/lib/room-layouts';
 
 const FONT=localAsset('fonts/space-grotesk-latin-500-normal.woff');
 
@@ -15,7 +16,7 @@ export function BurrowPortal({room,destination,near,onTravel}:{room:Room;destina
     if(rings.current)rings.current.rotation.z+=delta*(near ? .2 : .055);
     if(glow.current)glow.current.scale.setScalar(1+Math.sin(clock.elapsedTime*1.6)*.018+(near ? .035 : 0));
   });
-  return <group position={[0,0,-9.72]} onClick={onTravel} userData={{interactionId:'__portal'}}>
+  return <group position={ROOM_LAYOUTS[room.template].portal} onClick={onTravel} userData={{interactionId:'__portal'}}>
     <RoundedBox args={[4.7,.35,.55]} position={[0,.2,0]} radius={.12} castShadow><meshStandardMaterial color="#24283a" roughness={.62} metalness={.2}/></RoundedBox>
     <RoundedBox args={[.52,4.7,.62]} position={[-2.05,2.45,0]} radius={.14} castShadow><meshStandardMaterial color="#23283a" roughness={.65}/></RoundedBox>
     <RoundedBox args={[.52,4.7,.62]} position={[2.05,2.45,0]} radius={.14} castShadow><meshStandardMaterial color="#23283a" roughness={.65}/></RoundedBox>
@@ -28,6 +29,6 @@ export function BurrowPortal({room,destination,near,onTravel}:{room:Room;destina
     <Text font={FONT} position={[0,5.22,.35]} fontSize={.16} letterSpacing={.16} color="#aeb8d8">BURROW LIFT</Text>
     <Text font={FONT} position={[0,4.86,.35]} fontSize={.26} color={near?'#ffffff':'#d9ddf2'}>{threeText(destination.name)}</Text>
     <Text font={FONT} position={[0,.48,.4]} fontSize={.12} letterSpacing={.08} color={near?'#bfefff':'#71809e'}>{near?'E  TRAVEL':'NEXT ROOM'}</Text>
-    <pointLight position={[0,2.3,1.2]} color={room.accent} intensity={near?8:4} distance={5.5} decay={2}/>
+    <pointLight position={[0,2.3,1.2]} color={room.accent} intensity={near?4.2:2.2} distance={4.8} decay={2}/>
   </group>;
 }

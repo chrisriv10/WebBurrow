@@ -1,5 +1,5 @@
 import { describe,expect,it } from 'vitest';
-import { firstValidPlacement, interactionPoint, snapValue, validatePlacement } from '@/lib/placement';
+import { firstValidPlacement, interactionPoint, snapValue, suggestedMount, validatePlacement } from '@/lib/placement';
 import { DEMO_OBJECTS } from '@/lib/demo';
 
 describe('room placement',()=>{
@@ -27,5 +27,13 @@ describe('room placement',()=>{
     expect(point[0]).toBeLessThanOrEqual(7.25);
     expect(point[2]).toBeLessThanOrEqual(7.25);
     expect(point[1]).toBe(1.1);
+  });
+
+  it('chooses a compatible contextual surface without reusing an occupied anchor',()=>{
+    const anchor=suggestedMount('studio','desk-monitor',[]);
+    expect(anchor).toMatchObject({id:'studio-left-desk',kind:'desk'});
+    const occupied={...DEMO_OBJECTS[0],mount:{kind:anchor!.kind,surfaceId:anchor!.id}};
+    expect(suggestedMount('studio','desk-monitor',[occupied])?.id).toBe('studio-right-desk');
+    expect(suggestedMount('studio','poster',[])?.kind).toBe('wall');
   });
 });
