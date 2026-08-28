@@ -14,6 +14,7 @@ import { WebsiteObject } from './website-object';
 import { LiveWidget } from './live-widget';
 import { integrationAdapters } from '@/lib/integrations/registry';
 import { ROOM_LAYOUTS } from '@/lib/room-layouts';
+import { recordWorldFrame } from '@/lib/performance';
 
 function EditCameraRig({active}:{active:boolean}) {
   const {camera}=useThree();const wasActive=useRef(false);const savedQuaternion=useRef(new Quaternion());
@@ -22,6 +23,12 @@ function EditCameraRig({active}:{active:boolean}) {
     if(!active&&wasActive.current){const [x,y,z]=playerTelemetry.position;camera.position.set(x,y+.8,z);camera.quaternion.copy(savedQuaternion.current);}
     wasActive.current=active;
   },[active,camera]);
+  return null;
+}
+
+function PerformanceProbe({physicsBodies}:{physicsBodies:number}){
+  const {gl,scene}=useThree();const structural=useRef({frames:0,objects:0,lights:0});
+  useFrame((_state,delta)=>{structural.current.frames+=1;if(structural.current.frames%30===1){let objects=0,lights=0;scene.traverse(object=>{objects+=1;if(object.type.endsWith('Light'))lights+=1;});structural.current.objects=objects;structural.current.lights=lights;}recordWorldFrame(delta*1000,gl.info.render.calls,structural.current.objects,structural.current.lights,physicsBodies);});
   return null;
 }
 
@@ -68,7 +75,7 @@ function Scene({onLockChange}:{onLockChange:(locked:boolean)=>void}) {
     {editMode&&<gridHelper args={[Math.max(layout.bounds.maxX-layout.bounds.minX,layout.bounds.maxZ-layout.bounds.minZ),32,'#5f8798','#273442']} position={[0,.035,(layout.bounds.minZ+layout.bounds.maxZ)/2]}/>}
     {roomObjects.map(object=><WebsiteObject key={object.id} object={object} selected={object.id===selectedId} near={object.id===nearObjectId} onBeginDrag={id=>{beginObjectEdit(id);setDragging(id);}}/>)}
     {!editMode&&liveWidgets.map((widget,index)=>{const pinned=integrationObjects.find(item=>item.roomId===room.id&&(item.reference===widget.reference||item.kind===widget.kind));const defaults:Record<string,[number,number,number]>={'weather-window':[room.template==='lounge'?-4.7:3.5,0,layout.bounds.minZ+1.2],'calendar':[-2.2,0,layout.bounds.minZ+1.1],'github-repo':[room.template==='studio'?-3.5:2.5,0,-2.2],'feed':[room.template==='lounge'?4.2:-2.5,0,2.8]};return <LiveWidget key={widget.id} widget={widget} position={pinned?.position||defaults[widget.kind]||[index*2-3,0,0]} rotation={pinned?.rotation||0} near={nearObjectId===`__live:${widget.id}`}/>;})}
-    <PlayerController room={room} enabled={!editMode&&locked}/><EditCameraRig active={editMode}/>
+    <PlayerController room={room} enabled={!editMode&&locked}/><EditCameraRig active={editMode}/><PerformanceProbe physicsBodies={layout.obstacles.length+7}/>
     {editMode?<OrbitControls makeDefault target={[0,1,-1.2]} maxPolarAngle={Math.PI/2.08} minPolarAngle={.35} minDistance={6} maxDistance={21} enableDamping dampingFactor={.08}/>:<PointerLockControls makeDefault selector="#world-surface" onLock={()=>{setLocked(true);onLockChange(true);}} onUnlock={()=>{setLocked(false);onLockChange(false);}}/>}
   </>;
 }

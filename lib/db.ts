@@ -9,6 +9,7 @@ import {
 import { DEFAULT_PREFERENCES, DEMO_OBJECTS, DEMO_ROOMS } from './demo';
 import { migratePlacement } from './placement';
 import { ROOM_LAYOUTS } from './room-layouts';
+import { recordIndexedDbWrite } from './performance';
 
 type Setting = { key:string; value:unknown };
 const INTEGRATION_IDS = ['browser','github','weather','calendar','rss'] as const;
@@ -134,6 +135,7 @@ export async function saveSnapshot(input:SnapshotInput,database=db) {
     await database.siteIcons.bulkPut([...snapshot.siteIcons].sort((a,b)=>b.lastUsedAt-a.lastUsedAt).slice(0,100));
     await database.settings.bulkPut([{key:'note',value:snapshot.note},{key:'preferences',value:snapshot.preferences},{key:'schemaVersion',value:3}]);
   });
+  recordIndexedDbWrite();
 }
 
 export async function resetDatabase(database=db) { await database.delete(); await database.open(); }

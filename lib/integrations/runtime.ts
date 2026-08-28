@@ -2,6 +2,7 @@ import type { BurrowNotification, IntegrationCache, IntegrationConfig, Integrati
 import { integrationRegistry } from './registry';
 import { requestIntegration } from './transport';
 import type { IntegrationStatus } from './contracts';
+import { recordIntegrationRefresh } from '../performance';
 
 export type RuntimeResult={cache:IntegrationCache[];status:IntegrationStatus;error?:string;notifications:BurrowNotification[]};
 const attempts=new Map<IntegrationId,number>();
@@ -10,6 +11,7 @@ export async function refreshIntegration(config:IntegrationConfig,current:Integr
   const adapter=integrationRegistry[config.id];if(!config.enabled)return{cache:current,status:'disabled',notifications:[]};if(!adapter.available(config))return{cache:current,status:'idle',notifications:[]};
   if(typeof navigator!=='undefined'&&!navigator.onLine)return{cache:current,status:current.length?'stale':'offline',notifications:[]};
   const now=Date.now();if(!force&&current.length&&current.every(item=>item.expiresAt>now))return{cache:current,status:'ready',notifications:[]};
+  recordIntegrationRefresh();
   const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),10_000);
   try{
     const results=await adapter.refresh(config,current,{request:requestIntegration,now,signal:controller.signal});const byKey=new Map(current.map(item=>[item.cacheKey,item]));const notifications:BurrowNotification[]=[];

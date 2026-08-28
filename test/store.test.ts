@@ -28,7 +28,17 @@ describe('Burrow domain actions',()=>{
   it('persists bounded recent searches and tray preferences in session state',()=>{
     for(let index=0;index<9;index++)useBurrow.getState().rememberSearch(`query ${index}`);
     useBurrow.getState().setTrayOpen(true);useBurrow.getState().setTrayPinned(true);useBurrow.getState().setReducedEffects(true);
-    const preferences=useBurrow.getState().preferences;expect(preferences.recentSearches).toHaveLength(6);expect(preferences.recentSearches[0]).toBe('query 8');expect(preferences).toMatchObject({trayOpen:true,trayPinned:true,reducedEffects:true});
+    const preferences=useBurrow.getState().preferences;expect(preferences.recentSearches).toHaveLength(6);expect(preferences.recentSearches[0]).toBe('query 8');expect(preferences).toMatchObject({trayOpen:true,trayPinned:true,reducedEffects:true});expect(preferences.onboardingMilestones).toContain('tray');
+  });
+
+  it('keeps sound muted by default and persists gesture-gated sound and guidance choices',()=>{
+    expect(useBurrow.getState().preferences.soundEnabled).toBe(false);
+    useBurrow.getState().setSoundPreferences({soundEnabled:true,soundVolume:.35,ambienceEnabled:true});
+    useBurrow.getState().completeOnboarding('quick-access');useBurrow.getState().completeOnboarding('quick-access');useBurrow.getState().setEditMode(true);
+    expect(useBurrow.getState().preferences).toMatchObject({soundEnabled:true,soundVolume:.35,ambienceEnabled:true});
+    expect(useBurrow.getState().preferences.onboardingMilestones.filter(item=>item==='quick-access')).toHaveLength(1);
+    expect(useBurrow.getState().preferences.onboardingMilestones).toContain('edit');
+    useBurrow.getState().resetOnboarding();expect(useBurrow.getState().preferences).toMatchObject({hasEntered:false,onboardingMilestones:[]});
   });
 
   it('applies curated room customization without replacing untouched appearance fields',()=>{

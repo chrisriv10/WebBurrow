@@ -140,7 +140,7 @@ function createWindow() {
         throw new Error('Renderer did not finish local persistence initialization.');
       }
       await window.webContents.executeJavaScript(
-        `Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('without mouse look'))?.click()`,
+        `Array.from(document.querySelectorAll('button')).find((button) => button.textContent?.includes('Use quick controls') || button.textContent?.includes('without mouse look'))?.click()`,
       );
       await new Promise((resolve) => setTimeout(resolve, 1400));
       if (qaView === 'studio' || qaView === 'lounge') {
@@ -188,6 +188,15 @@ function createWindow() {
       }
       if (rendererErrors.length) {
         throw new Error(`Renderer logged ${rendererErrors.length} error(s): ${rendererErrors[0]}`);
+      }
+      const metrics = await window.webContents.executeJavaScript(`window.__WEBBURROW_METRICS__?.()`);
+      console.log(`WEBBURROW_PERFORMANCE ${JSON.stringify(metrics || {})}`);
+      window.hide();sendCommand({ type:'visibility', payload:false });
+      await new Promise((resolve) => setTimeout(resolve, 650));
+      const hiddenMetrics = await window.webContents.executeJavaScript(`window.__WEBBURROW_METRICS__?.()`);
+      console.log(`WEBBURROW_HIDDEN_PERFORMANCE ${JSON.stringify(hiddenMetrics || {})}`);
+      if (metrics && hiddenMetrics && (hiddenMetrics.frames > metrics.frames + 1 || hiddenMetrics.miniBurrowUpdates > metrics.miniBurrowUpdates + 1 || hiddenMetrics.integrationRefreshes > metrics.integrationRefreshes)) {
+        throw new Error('Hidden-window work did not pause.');
       }
       console.log('WEBBURROW_DESKTOP_SMOKE_OK');
       app.exit(0);
