@@ -1,10 +1,10 @@
-import type { BookmarkObject, Preferences, Room } from './types';
+import { DEFAULT_ROOM_APPEARANCE, type BookmarkObject, type Preferences, type Room } from './types';
 
 const now = Date.now();
 export const DEMO_ROOMS: Room[] = [
-  { id:'room-home', name:'Home Den', template:'den', accent:'#a78bfa', spawn:[0,1.1,7], lifecycle:'permanent', isDemo:true, createdAt:now },
-  { id:'room-dev', name:'Developer Studio', template:'studio', accent:'#74c7ec', spawn:[0,1.1,7], lifecycle:'permanent', isDemo:true, createdAt:now+1 },
-  { id:'room-media', name:'Media Lounge', template:'lounge', accent:'#ff9f68', spawn:[0,1.1,7], lifecycle:'permanent', isDemo:true, createdAt:now+2 },
+  { id:'room-home', name:'Home Den', template:'den', accent:'#a78bfa', spawn:[0,1.1,5.25], lifecycle:'permanent', purpose:'standard',layoutVersion:2,appearance:{...DEFAULT_ROOM_APPEARANCE,icon:'home',wall:'soft-slate',floor:'dark-wood',lighting:'cozy-night',exterior:'quiet-rain',furniture:'compact',decor:'books'}, isDemo:true, createdAt:now },
+  { id:'room-dev', name:'Developer Studio', template:'studio', accent:'#74c7ec', spawn:[0,1.1,6.15], lifecycle:'permanent', purpose:'standard',layoutVersion:2,appearance:{...DEFAULT_ROOM_APPEARANCE,icon:'code',wall:'navy-panel',floor:'technical',lighting:'focus',exterior:'city-night',furniture:'modular',decor:'technical'}, isDemo:true, createdAt:now+1 },
+  { id:'room-media', name:'Media Lounge', template:'lounge', accent:'#c68cff', spawn:[0,1.1,5.8], lifecycle:'permanent', purpose:'standard',layoutVersion:2,appearance:{...DEFAULT_ROOM_APPEARANCE,icon:'media',wall:'graphite',floor:'woven',lighting:'media',exterior:'blue-hour',furniture:'classic',decor:'plants'}, isDemo:true, createdAt:now+2 },
 ];
 
 const make = (id:string, roomId:string, name:string, url:string, archetype:BookmarkObject['archetype'], color:string, position:[number,number,number], favorite=false):BookmarkObject => ({
@@ -23,4 +23,4 @@ export const DEMO_OBJECTS: BookmarkObject[] = [
   make('site-twitch','room-media','Twitch','https://www.twitch.tv/','poster','#a980ff',[5,0,-1]),
 ];
 
-export const DEFAULT_PREFERENCES: Preferences = { lastRoomId:'room-home', trayOpen:false, trayPinned:false, reducedEffects:false, hasEntered:false, recentSearches:[], searchProvider:'duckduckgo', trayModules:['favorites','recent','note'], systemTrayEnabled:false, minimizeToTray:false, temperatureUnit:'fahrenheit', windowEffects:true };
+export const DEFAULT_PREFERENCES: Preferences = { lastRoomId:'room-home', trayOpen:false, trayPinned:false, reducedEffects:false, hasEntered:false, recentSearches:[], searchProvider:'duckduckgo', trayModules:['favorites','recent','note'], systemTrayEnabled:false, minimizeToTray:false, temperatureUnit:'fahrenheit', windowEffects:true,soundEnabled:false,soundVolume:.35,ambienceEnabled:true,onboardingMilestones:[] };

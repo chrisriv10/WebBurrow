@@ -2,11 +2,13 @@ import Dexie, { type EntityTable } from 'dexie';
 import {
   activitySchema, bookmarkObjectSchema, calendarEventSchema, calendarSourceSchema, collectionSchema, feedItemSchema,
   feedSourceSchema, integrationCacheSchema, integrationConfigSchema, integrationObjectSchema, notificationSchema,
-  preferencesSchema, roomSchema,
+  preferencesSchema, roomSchema, siteIconSchema,
   type Activity, type BookmarkObject, type BurrowNotification, type CalendarEvent, type CalendarSource, type Collection,
-  type FeedItem, type FeedSource, type IntegrationCache, type IntegrationConfig, type IntegrationObject, type Preferences, type Room,
+  type FeedItem, type FeedSource, type IntegrationCache, type IntegrationConfig, type IntegrationObject, type Preferences, type Room, type SiteIcon,
 } from './types';
 import { DEFAULT_PREFERENCES, DEMO_OBJECTS, DEMO_ROOMS } from './demo';
+import { migratePlacement } from './placement';
+import { ROOM_LAYOUTS } from './room-layouts';
 
 type Setting = { key:string; value:unknown };
 const INTEGRATION_IDS = ['browser','github','weather','calendar','rss'] as const;
@@ -25,6 +27,7 @@ export class BurrowDatabase extends Dexie {
   feedSources!: EntityTable<FeedSource,'id'>;
   feedItems!: EntityTable<FeedItem,'id'>;
   notifications!: EntityTable<BurrowNotification,'id'>;
+  siteIcons!: EntityTable<SiteIcon,'id'>;
 
   constructor(name='webburrow') {
     super(name);
@@ -39,6 +42,21 @@ export class BurrowDatabase extends Dexie {
       integrationObjects:'id,integrationId,roomId,kind,lifecycle', calendarSources:'id,kind,enabled,updatedAt', calendarEvents:'id,sourceId,startAt,endAt',
       feedSources:'id,enabled,updatedAt', feedItems:'id,sourceId,publishedAt,read', notifications:'id,kind,createdAt,dismissedAt',
     });
+    this.version(4).stores({
+      rooms:'id,createdAt,lifecycle,purpose,layoutVersion', objects:'id,roomId,url,favorite,collectionId,lifecycle,createdAt,updatedAt', activity:'id,objectId,openedAt', settings:'key',
+      collections:'id,name,lifecycle,updatedAt', integrations:'id,enabled,updatedAt', integrationCache:'id,integrationId,expiresAt',
+      integrationObjects:'id,integrationId,roomId,kind,lifecycle', calendarSources:'id,kind,enabled,updatedAt', calendarEvents:'id,sourceId,startAt,endAt',
+      feedSources:'id,enabled,updatedAt', feedItems:'id,sourceId,publishedAt,read', notifications:'id,kind,createdAt,dismissedAt',siteIcons:'id,siteUrl,lastUsedAt',
+    }).upgrade(async transaction=>{
+      const roomTable=transaction.table('rooms');const objectTable=transaction.table('objects');
+      const rooms=(await roomTable.toArray()).flatMap(value=>{const parsed=roomSchema.safeParse(value);return parsed.success?[parsed.data]:[];});
+      const roomById=new Map(rooms.map(room=>[room.id,room]));const migratedObjects:BookmarkObject[]=[];
+      for(const raw of await objectTable.toArray()){const parsed=bookmarkObjectSchema.safeParse(raw);if(!parsed.success)continue;const object=parsed.data;const room=roomById.get(object.roomId);if(room){object.position=migratePlacement(object.position,room.template,migratedObjects.length,migratedObjects,object);migratedObjects.push(object);}}
+      await roomTable.bulkPut(rooms.map(room=>({...room,layoutVersion:2,spawn:ROOM_LAYOUTS[room.template].spawn})));
+      await objectTable.clear();await objectTable.bulkPut(migratedObjects);
+      const settings=transaction.table('settings');const pref=await settings.get('preferences') as Setting|undefined;
+      if(pref)await settings.put({key:'preferences',value:{...DEFAULT_PREFERENCES,...(pref.value as Partial<Preferences>)}});
+    });
   }
 }
 
@@ -47,7 +65,7 @@ export const db = new BurrowDatabase('webburrow-prototype-v1');
 export type Snapshot = {
   rooms:Room[]; objects:BookmarkObject[]; activity:Activity[]; note:string; preferences:Preferences; collections:Collection[];
   integrations:IntegrationConfig[]; integrationCache:IntegrationCache[]; integrationObjects:IntegrationObject[];
-  calendarSources:CalendarSource[]; calendarEvents:CalendarEvent[]; feedSources:FeedSource[]; feedItems:FeedItem[]; notifications:BurrowNotification[];
+  calendarSources:CalendarSource[]; calendarEvents:CalendarEvent[]; feedSources:FeedSource[]; feedItems:FeedItem[]; notifications:BurrowNotification[];siteIcons:SiteIcon[];
 };
 export type SnapshotInput = Pick<Snapshot,'rooms'|'objects'|'activity'|'note'|'preferences'>&Partial<Omit<Snapshot,'rooms'|'objects'|'activity'|'note'|'preferences'>>;
 
@@ -75,13 +93,13 @@ export function normalizeCollections(objects:BookmarkObject[],existing:Collectio
 function emptyIntegrations():IntegrationConfig[] { return INTEGRATION_IDS.map((id,index)=>({id,enabled:false,settings:{},updatedAt:index})); }
 
 export function completeSnapshot(input:SnapshotInput):Snapshot {
-  return {rooms:input.rooms,objects:input.objects,activity:input.activity,note:input.note,preferences:input.preferences,collections:input.collections||[],integrations:input.integrations||emptyIntegrations(),integrationCache:input.integrationCache||[],integrationObjects:input.integrationObjects||[],calendarSources:input.calendarSources||[],calendarEvents:input.calendarEvents||[],feedSources:input.feedSources||[],feedItems:input.feedItems||[],notifications:input.notifications||[]};
+  return {rooms:input.rooms,objects:input.objects,activity:input.activity,note:input.note,preferences:input.preferences,collections:input.collections||[],integrations:input.integrations||emptyIntegrations(),integrationCache:input.integrationCache||[],integrationObjects:input.integrationObjects||[],calendarSources:input.calendarSources||[],calendarEvents:input.calendarEvents||[],feedSources:input.feedSources||[],feedItems:input.feedItems||[],notifications:input.notifications||[],siteIcons:input.siteIcons||[]};
 }
 
 export async function loadSnapshot(database=db):Promise<Snapshot> {
-  const [roomRows,objectRows,activityRows,noteRow,prefRow,collectionRows,integrationRows,cacheRows,integrationObjectRows,calendarSourceRows,calendarEventRows,feedSourceRows,feedItemRows,notificationRows] = await Promise.all([
+  const [roomRows,objectRows,activityRows,noteRow,prefRow,collectionRows,integrationRows,cacheRows,integrationObjectRows,calendarSourceRows,calendarEventRows,feedSourceRows,feedItemRows,notificationRows,siteIconRows] = await Promise.all([
     database.rooms.toArray(),database.objects.toArray(),database.activity.orderBy('openedAt').reverse().limit(20).toArray(),database.settings.get('note'),database.settings.get('preferences'),
-    database.collections.toArray(),database.integrations.toArray(),database.integrationCache.toArray(),database.integrationObjects.toArray(),database.calendarSources.toArray(),database.calendarEvents.toArray(),database.feedSources.toArray(),database.feedItems.toArray(),database.notifications.orderBy('createdAt').reverse().limit(100).toArray(),
+    database.collections.toArray(),database.integrations.toArray(),database.integrationCache.toArray(),database.integrationObjects.toArray(),database.calendarSources.toArray(),database.calendarEvents.toArray(),database.feedSources.toArray(),database.feedItems.toArray(),database.notifications.orderBy('createdAt').reverse().limit(100).toArray(),database.siteIcons.orderBy('lastUsedAt').reverse().limit(100).toArray(),
   ]);
   let rooms=safeRows(roomRows,roomSchema).filter(room=>room.lifecycle==='permanent');
   let objects=safeRows(objectRows,bookmarkObjectSchema).filter(object=>object.lifecycle==='permanent');
@@ -95,7 +113,7 @@ export async function loadSnapshot(database=db):Promise<Snapshot> {
     preferences:parsedPreferences.success?parsedPreferences.data:DEFAULT_PREFERENCES,collections:normalized.collections,
     integrations:[...integrations,...emptyIntegrations().filter(item=>!existingIds.has(item.id))],integrationCache:safeRows(cacheRows,integrationCacheSchema),
     integrationObjects:safeRows(integrationObjectRows,integrationObjectSchema).filter(item=>item.lifecycle==='permanent'),calendarSources:safeRows(calendarSourceRows,calendarSourceSchema),
-    calendarEvents:safeRows(calendarEventRows,calendarEventSchema),feedSources:safeRows(feedSourceRows,feedSourceSchema),feedItems:safeRows(feedItemRows,feedItemSchema),notifications:safeRows(notificationRows,notificationSchema),
+    calendarEvents:safeRows(calendarEventRows,calendarEventSchema),feedSources:safeRows(feedSourceRows,feedSourceSchema),feedItems:safeRows(feedItemRows,feedItemSchema),notifications:safeRows(notificationRows,notificationSchema),siteIcons:safeRows(siteIconRows,siteIconSchema),
   };
   if(!roomRows.length)await saveSnapshot(snapshot,database);
   return snapshot;
@@ -113,7 +131,8 @@ export async function saveSnapshot(input:SnapshotInput,database=db) {
     await database.integrationObjects.bulkPut(snapshot.integrationObjects.filter(item=>item.lifecycle==='permanent'&&roomIds.has(item.roomId)));
     await database.calendarSources.bulkPut(snapshot.calendarSources);await database.calendarEvents.bulkPut(snapshot.calendarEvents.slice(0,500));
     await database.feedSources.bulkPut(snapshot.feedSources);await database.feedItems.bulkPut(snapshot.feedItems);await database.notifications.bulkPut(snapshot.notifications.slice(0,100));
-    await database.settings.bulkPut([{key:'note',value:snapshot.note},{key:'preferences',value:snapshot.preferences},{key:'schemaVersion',value:2}]);
+    await database.siteIcons.bulkPut([...snapshot.siteIcons].sort((a,b)=>b.lastUsedAt-a.lastUsedAt).slice(0,100));
+    await database.settings.bulkPut([{key:'note',value:snapshot.note},{key:'preferences',value:snapshot.preferences},{key:'schemaVersion',value:3}]);
   });
 }
 

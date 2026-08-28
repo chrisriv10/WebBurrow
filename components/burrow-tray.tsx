@@ -10,7 +10,7 @@ import { playerTelemetry } from '@/world/telemetry';
 import { integrationAdapters } from '@/lib/integrations/registry';
 
 const objectSize:Record<Archetype,[number,number]>={
-  terminal:[8,5],tv:[11,5],book:[5,7],poster:[6,9],arcade:[7,7],pedestal:[6,6],laptop:[8,5],radio:[7,5],'file-box':[6,6],
+  terminal:[8,5],tv:[11,5],book:[5,7],poster:[6,9],arcade:[7,7],pedestal:[6,6],laptop:[8,5],radio:[7,5],'file-box':[6,6],'desk-monitor':[9,5],'wall-display':[11,6],tablet:[6,8],'compact-portal':[7,7],
 };
 
 function projection(width:number,height:number,x:number,z:number) {

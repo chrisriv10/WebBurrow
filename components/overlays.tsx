@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ArchiveRestore, Box, ChevronRight, Command, Copy, Download, Edit3, ExternalLink, FileUp, Home, Import, MapPin, Plus, RotateCcw, Save, Search, Sparkles, Star, Trash2, Upload, Zap, X } from 'lucide-react';
 import { useBurrow } from '@/store/use-burrow';
-import { archetypeSchema, type Archetype, type ConfigEnvelopeV2, type RoomTemplate } from '@/lib/types';
+import { archetypeSchema, type Archetype, type ConfigEnvelopeV3, type RoomTemplate } from '@/lib/types';
 import { autoArchetype, normalizeUrl } from '@/lib/url';
 import { parseBookmarksHtml, type ParsedBookmark } from '@/lib/bookmarks';
 import { buildSearchIndex, searchEntries, webSearchEntry, type SearchEntry } from '@/lib/search';
@@ -44,7 +44,7 @@ function BookmarkImportModal() {
 }
 
 function DataModal() {
-  const state=useBurrow();const openModal=state.openModal;const [error,setError]=useState('');const [mode,setMode]=useState<'merge'|'replace'>('merge');const [pending,setPending]=useState<ConfigEnvelopeV2|null>(null);
+  const state=useBurrow();const openModal=state.openModal;const [error,setError]=useState('');const [mode,setMode]=useState<'merge'|'replace'>('merge');const [pending,setPending]=useState<ConfigEnvelopeV3|null>(null);
   const download=()=>{const data=makeConfig(state);const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`webburrow-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);};
   const previewConfig=async(file:File)=>{try{setError('');setPending(parseConfig(await file.text()));}catch(e){setPending(null);setError(e instanceof Error?e.message:'Could not import configuration.');}};
   const apply=()=>{if(!pending)return;if(mode==='replace'&&!confirm('Replace every room and website with this configuration?'))return;state.applyConfig(pending,mode);};

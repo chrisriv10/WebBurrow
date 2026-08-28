@@ -37,6 +37,16 @@ describe('Burrow domain actions',()=>{
     useBurrow.getState().keepSessionRoom(room.id);expect(useBurrow.getState().rooms.find(item=>item.id===room.id)?.lifecycle).toBe('permanent');expect(useBurrow.getState().objects.find(item=>item.roomId===room.id)?.lifecycle).toBe('permanent');
   });
 
+  it('appends, promotes and clears temporary browser workspaces without persisting tab identity',()=>{
+    const state=useBurrow.getState();state.receiveBrowserTabs('Research',[{title:'One',url:'https://example.com/one',tabId:4,windowId:2}],{scope:'window'});
+    const workspace=useBurrow.getState().browserWorkspaces.at(-1)!;
+    useBurrow.getState().receiveBrowserTabs('Research',[{title:'Two',url:'https://example.com/two',tabId:5,groupId:3,groupName:'Sources'}],{workspaceId:workspace.id,mode:'append',scope:'group'});
+    const items=useBurrow.getState().objects.filter(item=>item.roomId===workspace.roomId);expect(items).toHaveLength(2);expect(items[1].browserReference?.groupName).toBe('Sources');
+    useBurrow.getState().promoteSessionItems([items[0].id],DEMO_ROOMS[0].id,'Saved research');
+    const promoted=useBurrow.getState().objects.find(item=>item.id===items[0].id)!;expect(promoted.lifecycle).toBe('permanent');expect(promoted.browserReference).toBeUndefined();expect(promoted.collection).toBe('Saved research');
+    useBurrow.getState().clearWorkspace(workspace.id);expect(useBurrow.getState().rooms.some(room=>room.id===workspace.roomId)).toBe(false);expect(useBurrow.getState().objects.some(item=>item.id===promoted.id)).toBe(true);
+  });
+
   it('bounds and deduplicates local notifications',()=>{
     for(let index=0;index<110;index++)useBurrow.getState().notify({kind:'info',title:`Notice ${index}`,body:'Local update',dedupeKey:`notice:${index}`});
     useBurrow.getState().notify({kind:'warning',title:'Replacement',body:'Updated',dedupeKey:'notice:109'});
