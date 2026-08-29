@@ -15,7 +15,7 @@ const MONO=localAsset('fonts/ibm-plex-mono-latin-500-normal.woff');
 
 export function SessionObjectField({objects,workspace,selectedId,nearObjectId}:{objects:BookmarkObject[];workspace:BrowserWorkspace;selectedId:string|null;nearObjectId:string|null}){
   const body=useRef<InstancedMesh>(null);const stand=useRef<InstancedMesh>(null);const base=useRef<InstancedMesh>(null);const screen=useRef<InstancedMesh>(null);const shelves=useRef<InstancedMesh>(null);
-  const setNearObject=useBurrow(state=>state.setNearObject);const openSite=useBurrow(state=>state.openSite);
+  const setNearObject=useBurrow(state=>state.setNearObject);
   const plan=useMemo(()=>planSessionLayout(objects,workspace.layoutMode),[objects,workspace.layoutMode]);const stationScale=plan.density==='dense'?.5:.62;
   const shelfPlan=useMemo(()=>plan.density==='dense'?plan.banks.flatMap(bank=>Array.from({length:bank.rows+1},(_,index)=>({bank,index}))):[],[plan]);
   useLayoutEffect(()=>{
@@ -26,7 +26,7 @@ export function SessionObjectField({objects,workspace,selectedId,nearObjectId}:{
   },[nearObjectId,objects,selectedId,stationScale]);
   useLayoutEffect(()=>{if(!shelves.current)return;const temp=new Object3D();const offset=new Vector3();const axis=new Vector3(0,1,0);for(const [instance,{bank,index}] of shelfPlan.entries()){offset.set(0,.14+index*.49,-.075).applyAxisAngle(axis,bank.rotation);temp.position.set(bank.position[0]+offset.x,bank.position[1]+offset.y,bank.position[2]+offset.z);temp.rotation.set(0,bank.rotation,0);temp.scale.set(bank.width-.18,.035,.42);temp.updateMatrix();shelves.current.setMatrixAt(instance,temp.matrix);}shelves.current.instanceMatrix.needsUpdate=true;},[shelfPlan]);
   const idFor=(event:ThreeEvent<PointerEvent>)=>event.instanceId===undefined?undefined:objects[event.instanceId]?.id;
-  const activate=(event:ThreeEvent<PointerEvent>)=>{event.stopPropagation();const id=idFor(event);if(id)openSite(id);};
+  const activate=()=>{};
   const hover=(event:ThreeEvent<PointerEvent>)=>{event.stopPropagation();setNearObject(idFor(event)??null);};
   const eventProps={onPointerDown:activate,onPointerMove:hover,onPointerOut:()=>setNearObject(null)};const userData={sessionObjectIds:objects.map(object=>object.id)};
   return <group>

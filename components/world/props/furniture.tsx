@@ -47,7 +47,7 @@ function Sofa({room,variant}:{room:Room;variant?:LayoutFurniture['variant']}){
     <instancedMesh ref={seats} args={[undefined,undefined,count]}><RoundedBoxGeometry args={[1,1,1]} radius={.12}/><meshStandardMaterial color="#ffffff" roughness={1}/></instancedMesh>
     <instancedMesh ref={backs} args={[undefined,undefined,count]}><RoundedBoxGeometry args={[1,1,1]} radius={.11}/><meshStandardMaterial color="#ffffff" roughness={1}/></instancedMesh>
     <instancedMesh ref={feet} args={[undefined,undefined,2]}><cylinderGeometry args={[.5,.6,1,12]}/><meshStandardMaterial color="#171d28" roughness={.86}/></instancedMesh>
-    <RoundedBox args={[.72,.44,.18]} radius={.1} position={[width*.18,1.18,-.27]} rotation={[0,0,-.08]}><meshStandardMaterial color={room.accent} roughness={1}/></RoundedBox>
+    <RoundedBox args={[.62,.18,.46]} radius={.08} position={[width*.18,.94,.24]} rotation={[0,0,-.05]}><meshStandardMaterial color="#514b63" roughness={1}/></RoundedBox>
   </group>;
 }
 
@@ -105,7 +105,7 @@ function MediaConsole({room}:{room:Room}){
   </group>;
 }
 
-function LoungeChair({room}:{room:Room}){
+function LoungeChair(){
   return <group>
     <RoundedBox args={[1.55,1.58,.36]} radius={.22} position={[0,1.2,-.42]} rotation={[-.1,0,0]} castShadow><meshStandardMaterial color="#303748" roughness={.96}/></RoundedBox>
     <RoundedBox args={[1.12,.92,.2]} radius={.16} position={[0,1.25,-.18]} rotation={[-.08,0,0]}><meshStandardMaterial color={SURFACES.fabricAlt.color} roughness={1}/></RoundedBox>
@@ -113,7 +113,6 @@ function LoungeChair({room}:{room:Room}){
     {[-.72,.72].map(x=><RoundedBox key={x} args={[.24,.52,1.04]} radius={.11} position={[x,.78,.08]}><meshStandardMaterial color="#303748" roughness={1}/></RoundedBox>)}
     <mesh position={[0,.23,0]}><cylinderGeometry args={[.1,.15,.5,14]}/><meshStandardMaterial {...SURFACES.darkMetal}/></mesh>
     <mesh position={[0,.08,0]} rotation={[-Math.PI/2,0,0]}><cylinderGeometry args={[.48,.48,.09,20]}/><meshStandardMaterial color="#202633" roughness={.86}/></mesh>
-    <RoundedBox args={[.56,.28,.1]} radius={.08} position={[.22,1.48,-.05]} rotation={[0,0,-.08]}><meshStandardMaterial color={room.accent} roughness={1}/></RoundedBox>
   </group>;
 }
 
@@ -156,7 +155,7 @@ export function RoomFurniture({room,layout}:{room:Room;layout:RoomLayoutDefiniti
     const scale=room.appearance.furniture==='compact'?.93:room.appearance.furniture==='modular'?1.03:1;
     const furnitureScale=item.kind==='notes-board'||item.kind==='activity-rack'?[1,1,1] as const:[scale,1,scale] as const;
     return <group key={item.id} position={item.position} rotation={[0,item.rotation??0,0]} scale={furnitureScale}>
-      {item.kind==='desk'?<Desk room={room} variant={item.variant}/>:item.kind==='sofa'?<Sofa room={room} variant={item.variant}/>:item.kind==='shelf'?<Shelf room={room} variant={item.variant}/>:item.kind==='lamp'?<FloorLamp room={room}/>:item.kind==='plant'?<Plant room={room}/>:item.kind==='coffee-table'?<CoffeeTable room={room}/>:item.kind==='media-console'?<MediaConsole room={room}/>:item.kind==='lounge-chair'?<LoungeChair room={room}/>:item.kind==='utility'?<UtilityRack room={room}/>:item.kind==='notes-board'?<NotesBoard/>:<ActivityRack room={room}/>} 
+      {item.kind==='desk'?<Desk room={room} variant={item.variant}/>:item.kind==='sofa'?<Sofa room={room} variant={item.variant}/>:item.kind==='shelf'?<Shelf room={room} variant={item.variant}/>:item.kind==='lamp'?<FloorLamp room={room}/>:item.kind==='plant'?<Plant room={room}/>:item.kind==='coffee-table'?<CoffeeTable room={room}/>:item.kind==='media-console'?<MediaConsole room={room}/>:item.kind==='lounge-chair'?<LoungeChair/>:item.kind==='utility'?<UtilityRack room={room}/>:item.kind==='notes-board'?<NotesBoard/>:<ActivityRack room={room}/>}
     </group>;
   })}</>;
 }

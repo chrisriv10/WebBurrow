@@ -1,6 +1,6 @@
 import type { Archetype, Room, RoomTemplate } from './types';
 
-export const CURRENT_LAYOUT_VERSION = 6;
+export const CURRENT_LAYOUT_VERSION = 11;
 
 export type LayoutBounds={minX:number;maxX:number;minZ:number;maxZ:number};
 export type LayoutObstacle={id:string;x:number;z:number;width:number;depth:number;rotation?:number};
@@ -36,13 +36,13 @@ export const ROOM_LAYOUTS:Record<RoomTemplate,RoomLayoutDefinition>={
     spawn:[0,1.1,5.05],portal:[0,0,-6.7],ceilingHeight:5.7,
     obstacles:[
       {id:'desk-nook',x:-5.1,z:-2.15,width:2.05,depth:3.25,rotation:Math.PI/2},
-      {id:'reading-seat',x:3.65,z:1.45,width:2.25,depth:3.9,rotation:-Math.PI/2},
-      {id:'shelves',x:4.85,z:-3.35,width:1.05,depth:2.8,rotation:-Math.PI/2},
+      {id:'reading-seat',x:3.65,z:1.45,width:3.95,depth:1.95,rotation:-Math.PI/2},
+      {id:'shelves',x:4.25,z:-6.15,width:3.2,depth:.95},
       {id:'coffee-table',x:.35,z:1.1,width:2.2,depth:1.2},
     ],
     anchors:[
       {id:'den-desk',kind:'desk',position:[-5.05,1.15,-2.15],rotation:Math.PI/2,accepts:deskTypes},
-      {id:'den-shelf',kind:'shelf',position:[4.85,1.27,-3.15],rotation:-Math.PI/2,accepts:shelfTypes},
+      {id:'den-shelf',kind:'shelf',position:[4.25,1.27,-6.15],rotation:0,accepts:shelfTypes},
       {id:'den-wall',kind:'wall',position:[2.35,1.45,-6.86],rotation:0,accepts:wallTypes},
       {id:'den-media',kind:'wall',position:[-5.94,1.45,3.45],rotation:Math.PI/2,accepts:wallTypes},
       {id:'den-search',kind:'floor',position:[-2.5,0,-.2],rotation:0,accepts:['pedestal','compact-portal']},
@@ -52,7 +52,7 @@ export const ROOM_LAYOUTS:Record<RoomTemplate,RoomLayoutDefinition>={
     furniture:[
       {id:'den-desk',kind:'desk',position:[-5.05,0,-2.15],rotation:Math.PI/2,variant:'compact'},
       {id:'den-sofa',kind:'sofa',position:[3.65,0,1.45],rotation:-Math.PI/2,variant:'compact'},
-      {id:'den-shelf',kind:'shelf',position:[4.85,0,-3.35],rotation:-Math.PI/2,variant:'compact'},
+      {id:'den-shelf',kind:'shelf',position:[4.25,0,-6.15],rotation:0,variant:'compact'},
       {id:'den-coffee',kind:'coffee-table',position:[.35,0,1.1],rotation:.08,variant:'low'},
       {id:'den-lamp',kind:'lamp',position:[4.55,0,4.35]},
       {id:'den-plant',kind:'plant',position:[-4.85,0,4.45]},
@@ -68,7 +68,7 @@ export const ROOM_LAYOUTS:Record<RoomTemplate,RoomLayoutDefinition>={
     sessionZones:[{id:'den-open',label:'Open floor',x:-.5,z:-1.25,width:6.1,depth:7.2}],
     miniFurniture:[
       {x:-5.05,z:-2.15,width:2,depth:3.15,kind:'desk',rotation:Math.PI/2},{x:3.65,z:1.45,width:2.15,depth:3.8,kind:'sofa',rotation:-Math.PI/2},
-      {x:4.85,z:-3.35,width:1,depth:2.7,kind:'shelf',rotation:-Math.PI/2},{x:.35,z:1.1,width:2.1,depth:1.1,kind:'table',rotation:.08},
+      {x:4.25,z:-6.15,width:3,depth:.85,kind:'shelf'},{x:.35,z:1.1,width:2.1,depth:1.1,kind:'table',rotation:.08},
     ],
   },
   studio:{
@@ -78,20 +78,20 @@ export const ROOM_LAYOUTS:Record<RoomTemplate,RoomLayoutDefinition>={
     obstacles:[
       {id:'workbench-left',x:-6.05,z:-2.3,width:2.35,depth:4.7,rotation:Math.PI/2},
       {id:'workbench-right',x:6.05,z:-2.3,width:2.35,depth:4.7,rotation:-Math.PI/2},
-      {id:'utility-left',x:-7.2,z:3.45,width:1.55,depth:2.6},
+      {id:'shelves',x:-3.8,z:6.7,width:3.2,depth:.95},
       {id:'utility-right',x:5.65,z:6.1,width:1.9,depth:1.2},
     ],
     anchors:[
       {id:'studio-left-desk',kind:'desk',position:[-6.05,1.15,-2.4],rotation:Math.PI/2,accepts:deskTypes},
       {id:'studio-right-desk',kind:'desk',position:[6.05,1.15,-2.4],rotation:-Math.PI/2,accepts:deskTypes},
       {id:'studio-display',kind:'wall',position:[2.7,1.55,-8.15],rotation:0,accepts:wallTypes},
-      {id:'studio-shelf',kind:'shelf',position:[-7.2,1.27,3.35],rotation:Math.PI/2,accepts:shelfTypes},
+      {id:'studio-shelf',kind:'shelf',position:[-3.8,1.27,6.7],rotation:0,accepts:shelfTypes},
     ],
     windows:[{id:'studio-window',position:[8.28,3.35,-1.35],rotation:-Math.PI/2,width:5.2,height:3.05,depth:2.8}],
     furniture:[
       {id:'studio-desk-left',kind:'desk',position:[-6.05,0,-2.3],rotation:Math.PI/2,variant:'technical'},
       {id:'studio-desk-right',kind:'desk',position:[6.05,0,-2.3],rotation:-Math.PI/2,variant:'technical'},
-      {id:'studio-shelf',kind:'shelf',position:[-7.2,0,3.45],rotation:Math.PI/2,variant:'technical'},
+      {id:'studio-shelf',kind:'shelf',position:[-3.8,0,6.7],rotation:0,variant:'technical'},
       {id:'studio-utility',kind:'utility',position:[5.65,0,6.1],rotation:Math.PI,variant:'modular'},
       {id:'studio-plant',kind:'plant',position:[7.1,0,4.35]},
       {id:'studio-activity',kind:'activity-rack',position:[-4,2.95,-8.25]},
@@ -109,7 +109,7 @@ export const ROOM_LAYOUTS:Record<RoomTemplate,RoomLayoutDefinition>={
     ],
     miniFurniture:[
       {x:-6.05,z:-2.3,width:2.25,depth:4.55,kind:'desk',rotation:Math.PI/2},{x:6.05,z:-2.3,width:2.25,depth:4.55,kind:'desk',rotation:-Math.PI/2},
-      {x:-7.2,z:3.45,width:1.45,depth:2.5,kind:'utility'},{x:5.65,z:6.1,width:1.8,depth:1.1,kind:'utility'},
+      {x:-3.8,z:6.7,width:3,depth:.85,kind:'shelf'},{x:5.65,z:6.1,width:1.8,depth:1.1,kind:'utility'},
     ],
   },
   lounge:{
@@ -117,13 +117,14 @@ export const ROOM_LAYOUTS:Record<RoomTemplate,RoomLayoutDefinition>={
     outline:[[-6.75,-7.5],[6.75,-7.5],[8.5,-5.35],[8.5,4.75],[6.15,7.1],[-6.15,7.1],[-8.5,4.75],[-8.5,-5.35]],
     spawn:[0,1.1,5.75],portal:[0,0,-6.92],ceilingHeight:5.85,
     obstacles:[
-      {id:'sofa',x:-4.05,z:1.35,width:2.25,depth:5.4,rotation:Math.PI/2},
-      {id:'media-console',x:4.35,z:-6.15,width:4.15,depth:1.05},
+      {id:'sofa',x:-4.05,z:1.35,width:5.35,depth:2.15,rotation:Math.PI/2},
+      {id:'media-console',x:3.6,z:-6.15,width:4.15,depth:1.05},
       {id:'coffee-table',x:.15,z:-.25,width:3.1,depth:1.55},
-      {id:'low-seat',x:4.15,z:2.75,width:2.2,depth:2.35},
+      {id:'low-seat',x:7.25,z:3.55,width:1.75,depth:1.9,rotation:-1.15},
     ],
     anchors:[
-      {id:'lounge-media',kind:'media',position:[4.35,.78,-6.05],rotation:0,accepts:['tv','wall-display','radio','arcade']},
+      {id:'lounge-tv',kind:'media',position:[2.25,.78,-6.05],rotation:0,accepts:['tv']},
+      {id:'lounge-media',kind:'media',position:[3.6,.78,-6.05],rotation:0,accepts:['tv','wall-display','radio','arcade']},
       {id:'lounge-table',kind:'desk',position:[.15,.59,-.25],rotation:0,accepts:['tablet','book','laptop','radio']},
       {id:'lounge-wall-left',kind:'wall',position:[-5.75,1.5,-6.98],rotation:0,accepts:wallTypes},
       {id:'lounge-shelf',kind:'shelf',position:[6.85,1.29,-2.65],rotation:-Math.PI/2,accepts:shelfTypes},
@@ -132,8 +133,8 @@ export const ROOM_LAYOUTS:Record<RoomTemplate,RoomLayoutDefinition>={
     furniture:[
       {id:'lounge-sofa',kind:'sofa',position:[-4.05,0,1.35],rotation:Math.PI/2,variant:'wide'},
       {id:'lounge-coffee',kind:'coffee-table',position:[.15,0,-.25],rotation:-.05,variant:'low'},
-      {id:'lounge-media',kind:'media-console',position:[4.35,0,-6.15],variant:'wide'},
-      {id:'lounge-chair',kind:'lounge-chair',position:[4.15,0,2.75],rotation:-.55,variant:'low'},
+      {id:'lounge-media',kind:'media-console',position:[3.6,0,-6.15],variant:'wide'},
+      {id:'lounge-chair',kind:'lounge-chair',position:[7.25,0,3.55],rotation:-1.15,variant:'low'},
       {id:'lounge-lamp',kind:'lamp',position:[6.35,0,4.55]},
       {id:'lounge-plant',kind:'plant',position:[-6.55,0,4.45]},
       {id:'lounge-shelf',kind:'shelf',position:[6.85,0,-2.65],rotation:-Math.PI/2,variant:'low'},
@@ -147,8 +148,8 @@ export const ROOM_LAYOUTS:Record<RoomTemplate,RoomLayoutDefinition>={
     ],
     sessionZones:[{id:'lounge-open',label:'Open lounge',x:1.3,z:1,width:5.4,depth:7.5}],
     miniFurniture:[
-      {x:-4.05,z:1.35,width:2.15,depth:5.2,kind:'sofa',rotation:Math.PI/2},{x:4.35,z:-6.15,width:4.1,depth:1,kind:'media'},
-      {x:.15,z:-.25,width:3,depth:1.45,kind:'table',rotation:-.05},{x:4.15,z:2.75,width:2.1,depth:2.25,kind:'seat',rotation:-.55},
+      {x:-4.05,z:1.35,width:2.15,depth:5.2,kind:'sofa',rotation:Math.PI/2},{x:3.6,z:-6.15,width:4.1,depth:1,kind:'media'},
+      {x:.15,z:-.25,width:3,depth:1.45,kind:'table',rotation:-.05},{x:7.25,z:3.55,width:1.7,depth:1.85,kind:'seat',rotation:-1.15},
     ],
   },
 };
