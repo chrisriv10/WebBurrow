@@ -12,12 +12,12 @@ const make = (id:string, roomId:string, name:string, url:string, archetype:Bookm
 });
 
 export const DEMO_OBJECTS: BookmarkObject[] = [
-  make('site-search','room-home','Search the web','https://www.google.com/','pedestal','#70cad8',[-2.5,0,-.2],true,0,{kind:'floor',surfaceId:'den-search'}),
-  make('site-notion','room-home','Notes & ideas','https://www.notion.so/','book','#a995d0',[4.25,1.27,-6.15],true,0,{kind:'shelf',surfaceId:'den-shelf'}),
+  make('site-search','room-home','Google Search','https://www.google.com/','pedestal','#70cad8',[-2.5,0,-.2],true,0,{kind:'floor',surfaceId:'den-search'}),
+  make('site-docs','room-home','Google Docs','https://docs.google.com/','book','#4285f4',[4.25,1.27,-6.15],true,0,{kind:'shelf',surfaceId:'den-shelf'}),
   make('site-wiki','room-home','Wikipedia','https://www.wikipedia.org/','file-box','#b8ae9d',[2,0,-2.2],false,0,{kind:'floor',surfaceId:'den-storage'}),
   make('site-github','room-dev','GitHub','https://github.com/','laptop','#748cff',[-6.05,1.15,-2.4],true,Math.PI/2,{kind:'desk',surfaceId:'studio-left-desk'}),
-  make('site-docs','room-dev','MDN Web Docs','https://developer.mozilla.org/','book','#6eb8ad',[-3.8,1.27,6.7],true,0,{kind:'shelf',surfaceId:'studio-shelf'}),
-  make('site-vercel','room-dev','Vercel','https://vercel.com/','terminal','#c8cad2',[6.05,1.15,-2.4],false,-Math.PI/2,{kind:'desk',surfaceId:'studio-right-desk'}),
+  make('site-stackoverflow','room-dev','Stack Overflow','https://stackoverflow.com/','book','#f48024',[-3.8,1.27,6.7],true,0,{kind:'shelf',surfaceId:'studio-shelf'}),
+  make('site-leetcode','room-dev','LeetCode','https://leetcode.com/','terminal','#f2b24a',[6.05,1.15,-2.4],false,-Math.PI/2,{kind:'desk',surfaceId:'studio-right-desk'}),
   make('site-youtube','room-media','YouTube','https://www.youtube.com/','tv','#c85c69',[2.25,.78,-6.05],true,0,{kind:'media',surfaceId:'lounge-tv'}),
   make('site-spotify','room-media','Spotify','https://open.spotify.com/','radio','#69ad81',[.15,.59,-.25],true,0,{kind:'desk',surfaceId:'lounge-table'}),
   make('site-twitch','room-media','Twitch','https://www.twitch.tv/','poster','#9574ca',[-8.05,1.5,-4.5],false,Math.PI/2,{kind:'wall',surfaceId:'lounge-wall-left'}),
