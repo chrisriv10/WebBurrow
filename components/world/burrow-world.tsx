@@ -14,7 +14,7 @@ import { WebsiteObject } from './website-object';
 import { SessionObjectField } from './session-object-field';
 import { LiveWidget } from './live-widget';
 import { integrationAdapters } from '@/lib/integrations/registry';
-import { ROOM_LAYOUTS } from '@/lib/room-layouts';
+import { ROOM_LAYOUTS, wallSegments } from '@/lib/room-layouts';
 import { recordWorldFrame } from '@/lib/performance';
 
 function EditCameraRig({active}:{active:boolean}) {
@@ -34,15 +34,16 @@ function PerformanceProbe({physicsBodies}:{physicsBodies:number}){
 }
 
 function Scene({onLockChange}:{onLockChange:(locked:boolean)=>void}) {
-  const rooms=useBurrow(s=>s.rooms);const currentRoomId=useBurrow(s=>s.currentRoomId);const objects=useBurrow(s=>s.objects);const integrationCache=useBurrow(s=>s.integrationCache);const integrationObjects=useBurrow(s=>s.integrationObjects);const editMode=useBurrow(s=>s.editMode);const selectedId=useBurrow(s=>s.selectedId);const nearObjectId=useBurrow(s=>s.nearObjectId);const setSelected=useBurrow(s=>s.setSelected);const beginObjectEdit=useBurrow(s=>s.beginObjectEdit);const placeObject=useBurrow(s=>s.placeObject);const setNearObject=useBurrow(s=>s.setNearObject);const openSite=useBurrow(s=>s.openSite);const returnToSpawn=useBurrow(s=>s.returnToSpawn);const setCurrentRoom=useBurrow(s=>s.setCurrentRoom);const setTrayOpen=useBurrow(s=>s.setTrayOpen);const setLauncher=useBurrow(s=>s.setLauncher);const openModal=useBurrow(s=>s.openModal);const setLiveDetail=useBurrow(s=>s.setLiveDetail);const [dragging,setDragging]=useState<string|null>(null);
+  const rooms=useBurrow(s=>s.rooms);const currentRoomId=useBurrow(s=>s.currentRoomId);const objects=useBurrow(s=>s.objects);const integrationCache=useBurrow(s=>s.integrationCache);const integrationObjects=useBurrow(s=>s.integrationObjects);const editMode=useBurrow(s=>s.editMode);const selectedId=useBurrow(s=>s.selectedId);const nearObjectId=useBurrow(s=>s.nearObjectId);const editPreview=useBurrow(s=>s.editPreview);const setSelected=useBurrow(s=>s.setSelected);const beginObjectEdit=useBurrow(s=>s.beginObjectEdit);const previewObjectPlacement=useBurrow(s=>s.previewObjectPlacement);const commitObjectPlacement=useBurrow(s=>s.commitObjectPlacement);const setNearObject=useBurrow(s=>s.setNearObject);const openSite=useBurrow(s=>s.openSite);const returnToSpawn=useBurrow(s=>s.returnToSpawn);const setCurrentRoom=useBurrow(s=>s.setCurrentRoom);const setTrayOpen=useBurrow(s=>s.setTrayOpen);const setLauncher=useBurrow(s=>s.setLauncher);const openModal=useBurrow(s=>s.openModal);const setLiveDetail=useBurrow(s=>s.setLiveDetail);const [dragging,setDragging]=useState<string|null>(null);
   const {camera,scene}=useThree();const raycaster=useMemo(()=>{const next=new Raycaster();next.far=4.25;return next;},[]);const center=useMemo(()=>new Vector2(0,0),[]);const [locked,setLocked]=useState(false);
   const room=rooms.find(item=>item.id===currentRoomId)||rooms[0];
   const layout=room?ROOM_LAYOUTS[room.template]:ROOM_LAYOUTS.den;
   const roomIndex=room?rooms.findIndex(item=>item.id===room.id):0;
   const destination=rooms[(roomIndex+1)%rooms.length]??room;
   const roomObjects=useMemo(()=>objects.filter(object=>object.roomId===room?.id),[objects,room?.id]);
-  const compactSession=Boolean(!editMode&&room?.purpose==='browser-session'&&roomObjects.length>28);
-  const liveWidgets=useMemo(()=>integrationAdapters.flatMap(adapter=>adapter.toWorldWidgets(integrationCache.filter(item=>item.integrationId===adapter.id))).slice(0,4),[integrationCache]);
+  const workspace=useBurrow(state=>state.browserWorkspaces.find(item=>item.roomId===room?.id));
+  const compactSession=Boolean(!editMode&&workspace&&roomObjects.length>24);
+  const liveWidgets=useMemo(()=>integrationAdapters.flatMap(adapter=>adapter.toWorldWidgets(integrationCache.filter(item=>item.integrationId===adapter.id))).filter(widget=>widget.kind!=='weather-window').slice(0,4),[integrationCache]);
 
   useEffect(()=>{
     const activate=(id:string)=>{
@@ -69,15 +70,16 @@ function Scene({onLockChange}:{onLockChange:(locked:boolean)=>void}) {
     if(interaction!==useBurrow.getState().nearObjectId)setNearObject(interaction);
   });
   if(!room||!destination)return null;
-  const floorMove=(event:ThreeEvent<PointerEvent>)=>{if(dragging&&event.buttons===1)placeObject(dragging,[event.point.x,0,event.point.z]);};
+  const floorMove=(event:ThreeEvent<PointerEvent>)=>{if(dragging&&event.buttons===1)previewObjectPlacement(dragging,[event.point.x,0,event.point.z]);};
+  const finishDrag=()=>{if(dragging)commitObjectPlacement(dragging);setDragging(null);};
   return <>
     <RoomEnvironment key={`${room.id}-environment`} room={room}/>
     <BurrowPortal room={room} destination={destination} near={nearObjectId==='__portal'} onTravel={()=>{if(!editMode)setCurrentRoom(destination.id);}}/>
-    <mesh position={[0,.028,(layout.bounds.minZ+layout.bounds.maxZ)/2]} rotation={[-Math.PI/2,0,0]} onPointerMove={floorMove} onPointerUp={()=>setDragging(null)} onPointerLeave={()=>setDragging(null)} onPointerDown={()=>{if(editMode&&!dragging)setSelected(null);}}><planeGeometry args={[layout.bounds.maxX-layout.bounds.minX,layout.bounds.maxZ-layout.bounds.minZ]}/><meshBasicMaterial transparent opacity={0}/></mesh>
+    <mesh position={[0,.028,(layout.bounds.minZ+layout.bounds.maxZ)/2]} rotation={[-Math.PI/2,0,0]} onPointerMove={floorMove} onPointerUp={finishDrag} onPointerDown={()=>{if(editMode&&!dragging)setSelected(null);}}><planeGeometry args={[layout.bounds.maxX-layout.bounds.minX,layout.bounds.maxZ-layout.bounds.minZ]}/><meshBasicMaterial transparent opacity={0}/></mesh>
     {editMode&&<gridHelper args={[Math.max(layout.bounds.maxX-layout.bounds.minX,layout.bounds.maxZ-layout.bounds.minZ),32,'#5f8798','#273442']} position={[0,.035,(layout.bounds.minZ+layout.bounds.maxZ)/2]}/>}
-    {compactSession?<SessionObjectField objects={roomObjects} selectedId={selectedId} nearObjectId={nearObjectId}/>:roomObjects.map(object=><WebsiteObject key={object.id} object={object} selected={object.id===selectedId} near={object.id===nearObjectId} onBeginDrag={id=>{beginObjectEdit(id);setDragging(id);}}/>)}
-    {!editMode&&liveWidgets.map((widget,index)=>{const pinned=integrationObjects.find(item=>item.roomId===room.id&&(item.reference===widget.reference||item.kind===widget.kind));const defaults:Record<string,[number,number,number]>={'weather-window':[room.template==='lounge'?-4.7:3.5,0,layout.bounds.minZ+1.2],'calendar':[-2.2,0,layout.bounds.minZ+1.1],'github-repo':[room.template==='studio'?-3.5:2.5,0,-2.2],'feed':[room.template==='lounge'?4.2:-2.5,0,2.8]};return <LiveWidget key={widget.id} widget={widget} position={pinned?.position||defaults[widget.kind]||[index*2-3,0,0]} rotation={pinned?.rotation||0} near={nearObjectId===`__live:${widget.id}`}/>;})}
-    <PlayerController room={room} enabled={!editMode&&locked}/><EditCameraRig active={editMode}/><PerformanceProbe physicsBodies={layout.obstacles.length+7}/>
+    {compactSession&&workspace?<SessionObjectField objects={roomObjects} workspace={workspace} selectedId={selectedId} nearObjectId={nearObjectId}/>:roomObjects.map(object=>{const preview=editPreview?.id===object.id?editPreview:null;return <WebsiteObject key={object.id} object={preview?{...object,position:preview.position}:object} selected={object.id===selectedId} near={object.id===nearObjectId} placementValid={preview?.valid} onBeginDrag={id=>{beginObjectEdit(id);setDragging(id);}}/>;})}
+    {!editMode&&liveWidgets.map((widget,index)=>{const pinned=integrationObjects.find(item=>item.roomId===room.id&&(item.reference===widget.reference||item.kind===widget.kind));const anchor=layout.integrations.find(item=>item.kind===widget.kind);const sameKindOffset=liveWidgets.slice(0,index).filter(item=>item.kind===widget.kind).length*.7;const position=pinned?.position??(anchor?[anchor.position[0]+Math.cos(anchor.rotation)*sameKindOffset,anchor.position[1],anchor.position[2]-Math.sin(anchor.rotation)*sameKindOffset] as [number,number,number]:[index*2-3,0,0]);return <LiveWidget key={widget.id} widget={widget} position={position} rotation={pinned?.rotation??anchor?.rotation??0} near={nearObjectId===`__live:${widget.id}`}/>;})}
+    <PlayerController room={room} enabled={!editMode&&locked}/><EditCameraRig active={editMode}/><PerformanceProbe physicsBodies={layout.obstacles.length+wallSegments(layout).length+2}/>
     {editMode?<OrbitControls makeDefault target={[0,1,-1.2]} maxPolarAngle={Math.PI/2.08} minPolarAngle={.35} minDistance={6} maxDistance={21} enableDamping dampingFactor={.08}/>:<PointerLockControls makeDefault selector="#world-surface" onLock={()=>{setLocked(true);onLockChange(true);}} onUnlock={()=>{setLocked(false);onLockChange(false);}}/>}
   </>;
 }

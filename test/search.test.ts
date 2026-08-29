@@ -14,4 +14,10 @@ describe('Quick Access search',()=>{
     expect(searchEntries(weighted,objects[0].collection??'Tools').some(entry=>entry.id===objects[0].id)).toBe(true);
   });
   it('supports command-only filtering and explicit web providers',()=>{expect(searchEntries(index,'> add').every(entry=>entry.kind==='action')).toBe(true);expect(webSearchEntry('g cozy burrows','duckduckgo')?.url).toContain('google.com');expect(webSearchEntry('yt low poly','duckduckgo')?.url).toContain('youtube.com');expect(webSearchEntry('plain query','duckduckgo')?.url).toContain('duckduckgo.com');});
+  it('surfaces recent and temporary-session context without displacing exact matches',()=>{
+    const temporary={...DEMO_OBJECTS[2],id:'temporary-tab',name:'Active research tab',lifecycle:'session' as const,source:'browser-extension' as const};
+    const activity=[{id:'recent',objectId:DEMO_OBJECTS[1].id,name:DEMO_OBJECTS[1].name,url:DEMO_OBJECTS[1].url,openedAt:Date.now()}];
+    const contextual=buildSearchIndex([...DEMO_OBJECTS,temporary],DEMO_ROOMS,[],[],activity);
+    expect(searchEntries(contextual,'')[0].id).toBe(DEMO_OBJECTS[1].id);expect(contextual.find(entry=>entry.id===temporary.id)?.subtitle).toContain('Temporary session');expect(searchEntries(contextual,'active research')[0].id).toBe(temporary.id);
+  });
 });

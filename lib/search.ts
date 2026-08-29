@@ -1,9 +1,10 @@
-import type { BookmarkObject, Preferences, Room } from './types';
+import type { Activity, BookmarkObject, Preferences, Room } from './types';
 
 export type SearchKind='site'|'room'|'collection'|'action'|'integration'|'event'|'feed'|'notification'|'web';
 export type SearchEntry={id:string;kind:SearchKind;title:string;subtitle:string;keywords:string;priority:number;action?:string;url?:string};
-export function buildSearchIndex(objects:BookmarkObject[],rooms:Room[],actions:{id:string;title:string;keywords:string}[],extras:SearchEntry[]=[]):SearchEntry[]{
-  return [...objects.map(object=>({id:object.id,kind:'site' as const,title:object.name,subtitle:`${object.collection?`${object.collection} · `:''}${new URL(object.url).hostname}`,keywords:`${object.name} ${object.url} ${object.archetype} ${object.collection??''} ${object.favorite?'favorite':''}`,priority:(object.favorite?12:0)+Math.min(object.usageCount,8),url:object.url})),
+export function buildSearchIndex(objects:BookmarkObject[],rooms:Room[],actions:{id:string;title:string;keywords:string}[],extras:SearchEntry[]=[],activity:Activity[]=[]):SearchEntry[]{
+  const recentPriority=new Map(activity.slice(0,20).map((item,index)=>[item.objectId,Math.max(1,7-index*.35)]));
+  return [...objects.map(object=>({id:object.id,kind:'site' as const,title:object.name,subtitle:`${object.lifecycle==='session'?'Temporary session · ':''}${object.collection?`${object.collection} · `:''}${new URL(object.url).hostname}`,keywords:`${object.name} ${object.url} ${object.archetype} ${object.collection??''} ${object.favorite?'favorite':''} ${object.lifecycle==='session'?'temporary browser tab session':''}`,priority:(object.favorite?12:0)+Math.min(object.usageCount,8)+(recentPriority.get(object.id)??0)+(object.lifecycle==='session'?3:0),url:object.url})),
     ...rooms.map(room=>({id:room.id,kind:'room' as const,title:room.name,subtitle:room.lifecycle==='session'?'Temporary browser workspace':`${room.template} room`,keywords:`${room.name} ${room.template} room switch travel ${room.lifecycle}`,priority:room.lifecycle==='session'?7:4})),
     ...actions.map(action=>({id:action.id,kind:'action' as const,title:action.title,subtitle:'Command',keywords:`${action.title} ${action.keywords}`,action:action.id,priority:2})),...extras];
 }

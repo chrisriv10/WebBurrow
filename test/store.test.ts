@@ -6,7 +6,7 @@ beforeEach(()=>{
   useBurrow.setState({
     ready:true,rooms:structuredClone(DEMO_ROOMS),objects:structuredClone(DEMO_OBJECTS),activity:[],note:'',siteIcons:[],browserWorkspaces:[],arrivalIds:[],notifications:[],
     preferences:structuredClone(DEFAULT_PREFERENCES),currentRoomId:DEMO_ROOMS[0].id,modal:null,launcherOpen:false,
-    editMode:false,selectedId:null,nearObjectId:null,toast:null,undoObject:null,
+    editMode:false,selectedId:null,nearObjectId:null,toast:null,undoObject:null,undoRoomObjects:null,editPreview:null,
   });
 });
 
@@ -46,6 +46,19 @@ describe('Burrow domain actions',()=>{
     useBurrow.getState().customizeRoom(room.id,{name:'Quiet Den',accent:'#6dd7d7',appearance:{wall:'soft-slate',decor:'minimal'}});
     expect(useBurrow.getState().rooms[0]).toMatchObject({name:'Quiet Den',accent:'#6dd7d7',appearance:{wall:'soft-slate',decor:'minimal',floor:original.floor,lighting:original.lighting}});
     expect(useBurrow.getState().toast).toBe('Room style updated.');
+  });
+
+  it('previews invalid placement without mutating data and can cancel an edit',()=>{
+    const object=useBurrow.getState().objects.find(item=>item.roomId==='room-home')!;const original=structuredClone(object);
+    useBurrow.getState().beginObjectEdit(object.id);useBurrow.getState().rotateObject(object.id,Math.PI/4);useBurrow.getState().previewObjectPlacement(object.id,[0,0,-6.7]);
+    expect(useBurrow.getState().editPreview).toMatchObject({id:object.id,valid:false});expect(useBurrow.getState().objects.find(item=>item.id===object.id)?.position).toEqual(original.position);
+    useBurrow.getState().cancelObjectEdit();expect(useBurrow.getState().objects.find(item=>item.id===object.id)).toEqual(original);expect(useBurrow.getState().editPreview).toBeNull();
+  });
+
+  it('tidies a room into valid deterministic placements and undoes the batch',()=>{
+    const before=structuredClone(useBurrow.getState().objects.filter(item=>item.roomId==='room-home'));
+    useBurrow.getState().tidyRoom('room-home');const tidy=useBurrow.getState().objects.filter(item=>item.roomId==='room-home');expect(new Set(tidy.map(item=>item.position.join(','))).size).toBe(tidy.length);
+    useBurrow.getState().undoLastEdit();expect(useBurrow.getState().objects.filter(item=>item.roomId==='room-home')).toEqual(before);
   });
 
   it('creates temporary tab workspaces and can convert them permanently',()=>{

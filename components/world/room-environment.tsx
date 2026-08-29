@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { RoundedBox, Text } from '@react-three/drei';
+import { Text } from '@react-three/drei';
 import { CuboidCollider, RigidBody } from '@react-three/rapier';
-import { DoubleSide, Shape, type Group } from 'three';
+import { Color, DoubleSide, Object3D, Shape, type Group, type InstancedMesh } from 'three';
 import type { Room } from '@/lib/types';
-import { ROOM_LAYOUTS, wallSegments, type WallSegment } from '@/lib/room-layouts';
+import { ROOM_LAYOUTS, wallSegments } from '@/lib/room-layouts';
 import { integrationRegistry } from '@/lib/integrations/registry';
 import { useBurrow } from '@/store/use-burrow';
 import { localAsset } from '@/lib/assets';
@@ -21,17 +21,23 @@ function floorShape(outline:[number,number][]){
   const shape=new Shape();outline.forEach(([x,z],index)=>index?shape.lineTo(x,-z):shape.moveTo(x,-z));shape.closePath();return shape;
 }
 
-function Wall({segment,height,room,index}:{segment:WallSegment;height:number;room:Room;index:number}){
-  const dx=segment.end[0]-segment.start[0],dz=segment.end[1]-segment.start[1],length=Math.hypot(dx,dz),rotation=-Math.atan2(dz,dx);
-  const position:[number,number,number]=[(segment.start[0]+segment.end[0])/2,height/2,(segment.start[1]+segment.end[1])/2];
-  const wallColor=WALL_COLORS[room.appearance.wall];
-  return <group position={position} rotation={[0,rotation,0]}>
-    <mesh castShadow receiveShadow><boxGeometry args={[length,height,.22]}/><meshStandardMaterial color={index%3===0?wallColor:'#171e2b'} roughness={.95}/></mesh>
-    <mesh position={[0,-height/2+.18,.14]}><boxGeometry args={[length,.24,.12]}/><meshStandardMaterial color="#343d4c" roughness={.8} metalness={.08}/></mesh>
-    <mesh position={[0,height/2-.18,.13]}><boxGeometry args={[length,.14,.1]}/><meshStandardMaterial color="#2d3543" roughness={.84}/></mesh>
-    {room.appearance.wall==='navy-panel'&&length>3&&Array.from({length:Math.max(1,Math.floor(length/2.2))},(_,i)=><mesh key={i} position={[-length/2+1.1+i*2.2,.15,.125]}><boxGeometry args={[.055,height-.75,.04]}/><meshStandardMaterial color="#33495a" roughness={.82}/></mesh>)}
-    {room.appearance.wall==='soft-slate'&&length>3&&<RoundedBox args={[Math.max(.5,length-1.1),height*.48,.045]} radius={.06} position={[0,.25,.13]}><meshStandardMaterial color="#242b3b" roughness={.98}/></RoundedBox>}
-    <CuboidCollider args={[length/2,height/2,.12]} />
+type WallDetail={segment:ReturnType<typeof wallSegments>[number];index:number;item:number;count:number;kind:'rail'|'inset'};
+
+function WallVisuals({room,height,segments}:{room:Room;height:number;segments:ReturnType<typeof wallSegments>}){
+  const main=useRef<InstancedMesh>(null),base=useRef<InstancedMesh>(null),top=useRef<InstancedMesh>(null),detail=useRef<InstancedMesh>(null);
+  const details=useMemo(()=>segments.flatMap<WallDetail>((segment,index):WallDetail[]=>{const dx=segment.end[0]-segment.start[0],dz=segment.end[1]-segment.start[1],length=Math.hypot(dx,dz);if(length<=3)return[];if(room.appearance.wall==='navy-panel')return Array.from({length:Math.max(1,Math.floor(length/2.2))},(_,item)=>({segment,index,item,count:Math.max(1,Math.floor(length/2.2)),kind:'rail'}));if(room.appearance.wall==='soft-slate')return[{segment,index,item:0,count:1,kind:'inset'}];return[];}),[room.appearance.wall,segments]);
+  useLayoutEffect(()=>{
+    const temp=new Object3D(),wallColor=WALL_COLORS[room.appearance.wall];
+    segments.forEach((segment,index)=>{const dx=segment.end[0]-segment.start[0],dz=segment.end[1]-segment.start[1],length=Math.hypot(dx,dz),rotation=-Math.atan2(dz,dx),x=(segment.start[0]+segment.end[0])/2,z=(segment.start[1]+segment.end[1])/2;const place=(mesh:InstancedMesh|null,y:number,scale:[number,number,number],offset=0)=>{if(!mesh)return;temp.position.set(x+Math.sin(rotation)*offset,y,z+Math.cos(rotation)*offset);temp.rotation.set(0,rotation,0);temp.scale.set(...scale);temp.updateMatrix();mesh.setMatrixAt(index,temp.matrix);};place(main.current,height/2,[length,height,.22]);place(base.current,.18,[length,.24,.12],.14);place(top.current,height-.18,[length,.14,.1],.13);main.current?.setColorAt(index,new Color(index%3===0?wallColor:'#171e2b'));});
+    for(const mesh of [main.current,base.current,top.current])if(mesh){mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;}
+    details.forEach((item,index)=>{if(!detail.current)return;const {segment}=item,dx=segment.end[0]-segment.start[0],dz=segment.end[1]-segment.start[1],length=Math.hypot(dx,dz),rotation=-Math.atan2(dz,dx),centerX=(segment.start[0]+segment.end[0])/2,centerZ=(segment.start[1]+segment.end[1])/2,along=item.kind==='rail'?-length/2+(item.item+1)*length/(item.count+1):0;temp.position.set(centerX+Math.cos(rotation)*along+Math.sin(rotation)*.13,item.kind==='rail'?height/2+.15:height/2+.25,centerZ-Math.sin(rotation)*along+Math.cos(rotation)*.13);temp.rotation.set(0,rotation,0);temp.scale.set(item.kind==='rail'?.055:Math.max(.5,length-1.1),item.kind==='rail'?height-.75:height*.48,item.kind==='rail'?.04:.045);temp.updateMatrix();detail.current.setMatrixAt(index,temp.matrix);detail.current.setColorAt(index,new Color(item.kind==='rail'?'#33495a':'#242b3b'));});
+    if(detail.current){detail.current.instanceMatrix.needsUpdate=true;if(detail.current.instanceColor)detail.current.instanceColor.needsUpdate=true;}
+  },[details,height,room.appearance.wall,segments]);
+  return <group>
+    <instancedMesh ref={main} args={[undefined,undefined,segments.length]} receiveShadow><boxGeometry/><meshStandardMaterial color="#ffffff" roughness={.95}/></instancedMesh>
+    <instancedMesh ref={base} args={[undefined,undefined,segments.length]}><boxGeometry/><meshStandardMaterial color="#343d4c" roughness={.8} metalness={.08}/></instancedMesh>
+    <instancedMesh ref={top} args={[undefined,undefined,segments.length]}><boxGeometry/><meshStandardMaterial color="#2d3543" roughness={.84}/></instancedMesh>
+    {details.length>0&&<instancedMesh ref={detail} args={[undefined,undefined,details.length]}><boxGeometry/><meshStandardMaterial color="#ffffff" roughness={.96}/></instancedMesh>}
   </group>;
 }
 
@@ -41,7 +47,8 @@ function Architecture({room}:{room:Room}){
   return <RigidBody type="fixed" colliders={false}>
     <mesh rotation={[-Math.PI/2,0,0]} receiveShadow><shapeGeometry args={[shape]}/><meshStandardMaterial color={FLOOR_COLORS[room.appearance.floor]} roughness={room.appearance.floor==='technical'?.84:.98} metalness={room.appearance.floor==='technical'?.04:0}/></mesh>
     <mesh position={[0,layout.ceilingHeight,0]} rotation={[Math.PI/2,0,0]}><shapeGeometry args={[shape]}/><meshStandardMaterial color="#0e1420" roughness={1} side={DoubleSide}/></mesh>
-    {segments.map((segment,index)=><Wall key={`${segment.start.join(':')}-${segment.end.join(':')}`} segment={segment} height={layout.ceilingHeight} room={room} index={index}/>)}
+    <WallVisuals room={room} height={layout.ceilingHeight} segments={segments}/>
+    {segments.map(segment=>{const dx=segment.end[0]-segment.start[0],dz=segment.end[1]-segment.start[1],length=Math.hypot(dx,dz),rotation=-Math.atan2(dz,dx);return <group key={`${segment.start.join(':')}-${segment.end.join(':')}`} position={[(segment.start[0]+segment.end[0])/2,layout.ceilingHeight/2,(segment.start[1]+segment.end[1])/2]} rotation={[0,rotation,0]}><CuboidCollider args={[length/2,layout.ceilingHeight/2,.12]}/></group>;})}
     {layout.obstacles.map(obstacle=><group key={obstacle.id} position={[obstacle.x,.65,obstacle.z]} rotation={[0,obstacle.rotation??0,0]}><CuboidCollider args={[obstacle.width/2,.65,obstacle.depth/2]}/></group>)}
     <CuboidCollider args={[width/2,.18,depth/2]} position={[0,-.18,centerZ]}/>
   </RigidBody>;
@@ -49,18 +56,19 @@ function Architecture({room}:{room:Room}){
 
 function FloorTreatment({room}:{room:Room}){
   const layout=ROOM_LAYOUTS[room.template],width=layout.bounds.maxX-layout.bounds.minX,depth=layout.bounds.maxZ-layout.bounds.minZ,centerZ=(layout.bounds.minZ+layout.bounds.maxZ)/2;
-  if(room.appearance.floor==='dark-wood')return <group position={[0,.012,centerZ]}>{Array.from({length:9},(_,i)=><mesh key={i} position={[-width/2+(i+1)*width/10,0,0]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[.018,depth*.82]}/><meshBasicMaterial color="#554048" transparent opacity={.19}/></mesh>)}</group>;
-  if(room.appearance.floor==='technical')return <group position={[0,.014,centerZ]}>{[-3.2,0,3.2].map(x=><mesh key={x} position={[x,0,0]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[.024,depth*.75]}/><meshBasicMaterial color={room.accent} transparent opacity={.22}/></mesh>)}</group>;
+  const positions=useMemo(()=>{const xs=room.appearance.floor==='dark-wood'?Array.from({length:9},(_,i)=>-width/2+(i+1)*width/10):[-3.2,0,3.2];return new Float32Array(xs.flatMap(x=>[x,.018,centerZ-depth*.4,x,.018,centerZ+depth*.4]));},[centerZ,depth,room.appearance.floor,width]);
+  if(room.appearance.floor==='dark-wood'||room.appearance.floor==='technical')return <lineSegments><bufferGeometry><bufferAttribute attach="attributes-position" args={[positions,3]}/></bufferGeometry><lineBasicMaterial color={room.appearance.floor==='technical'?room.accent:'#554048'} transparent opacity={room.appearance.floor==='technical'?.22:.19}/></lineSegments>;
   return <mesh position={[0,.018,centerZ+.6]} rotation={[-Math.PI/2,0,.04]} receiveShadow><circleGeometry args={[Math.min(width,depth)*.29,56]}/><meshStandardMaterial color="#302b42" roughness={1}/></mesh>;
 }
 
 function CeilingFan({room}:{room:Room}){
-  const fan=useRef<Group>(null),reduced=useBurrow(state=>state.preferences.reducedEffects);
+  const fan=useRef<Group>(null),blades=useRef<InstancedMesh>(null),reduced=useBurrow(state=>state.preferences.reducedEffects);
+  useLayoutEffect(()=>{const temp=new Object3D();[0,1,2].forEach(index=>{const angle=index*Math.PI*2/3;temp.position.set(Math.cos(angle)*.85,0,-Math.sin(angle)*.85);temp.rotation.set(0,angle,0);temp.scale.set(1.75,.065,.25);temp.updateMatrix();blades.current?.setMatrixAt(index,temp.matrix);});if(blades.current)blades.current.instanceMatrix.needsUpdate=true;},[]);
   useFrame((_state,delta)=>{if(fan.current&&!reduced&&!document.hidden)fan.current.rotation.y+=delta*.34;});
   if(room.template==='studio')return null;
   return <group ref={fan} position={[room.template==='den'?-1.1:1.6,ROOM_LAYOUTS[room.template].ceilingHeight-.22,2]}>
     <mesh><cylinderGeometry args={[.14,.14,.18,14]}/><meshStandardMaterial color="#4c5565" roughness={.76}/></mesh>
-    {[0,1,2].map(i=><RoundedBox key={i} args={[1.75,.065,.25]} radius={.045} position={[.85,0,0]} rotation={[0,i*Math.PI*2/3,0]}><meshStandardMaterial color="#303747" roughness={.88}/></RoundedBox>)}
+    <instancedMesh ref={blades} args={[undefined,undefined,3]}><boxGeometry/><meshStandardMaterial color="#303747" roughness={.88}/></instancedMesh>
   </group>;
 }
 

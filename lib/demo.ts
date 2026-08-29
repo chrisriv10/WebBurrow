@@ -7,20 +7,20 @@ export const DEMO_ROOMS: Room[] = [
   { id:'room-media', name:'Media Lounge', template:'lounge', accent:'#c68cff', spawn:[0,1.1,5.75], lifecycle:'permanent', purpose:'standard',layoutVersion:3,appearance:{...DEFAULT_ROOM_APPEARANCE,icon:'media',wall:'graphite',floor:'woven',lighting:'media',exterior:'blue-hour',furniture:'classic',decor:'plants',windowEffect:'cinematic',ambience:'quiet'}, isDemo:true, createdAt:now+2 },
 ];
 
-const make = (id:string, roomId:string, name:string, url:string, archetype:BookmarkObject['archetype'], color:string, position:[number,number,number], favorite=false):BookmarkObject => ({
-  id, roomId, name, url, archetype, color, position, rotation:0, favorite, icon:'globe', usageCount:0, collection:roomId==='room-dev'?'Build':roomId==='room-media'?'Unwind':'Everyday', lifecycle:'permanent', source:'demo', isDemo:true, createdAt:now, updatedAt:now,
+const make = (id:string, roomId:string, name:string, url:string, archetype:BookmarkObject['archetype'], color:string, position:[number,number,number], favorite=false,rotation=0,mount?:BookmarkObject['mount']):BookmarkObject => ({
+  id, roomId, name, url, archetype, color, position, rotation, mount, favorite, icon:'globe', usageCount:0, collection:roomId==='room-dev'?'Build':roomId==='room-media'?'Unwind':'Everyday', lifecycle:'permanent', source:'demo', isDemo:true, createdAt:now, updatedAt:now,
 });
 
 export const DEMO_OBJECTS: BookmarkObject[] = [
-  make('site-search','room-home','Search the web','https://www.google.com/','pedestal','#8be6ff',[-4,0,-3],true),
-  make('site-notion','room-home','Notes & ideas','https://www.notion.so/','book','#c5a9ff',[0,0,-4],true),
-  make('site-wiki','room-home','Wikipedia','https://www.wikipedia.org/','file-box','#d8cfbd',[4,0,-3]),
-  make('site-github','room-dev','GitHub','https://github.com/','laptop','#748cff',[-3,0,-3],true),
-  make('site-docs','room-dev','MDN Web Docs','https://developer.mozilla.org/','book','#76d2c5',[1,0,-4],true),
-  make('site-vercel','room-dev','Vercel','https://vercel.com/','terminal','#e9e9f2',[4,0,-2]),
-  make('site-youtube','room-media','YouTube','https://www.youtube.com/','tv','#d95868',[-3,0,-4],true),
-  make('site-spotify','room-media','Spotify','https://open.spotify.com/','radio','#7ccf9a',[2,0,-3],true),
-  make('site-twitch','room-media','Twitch','https://www.twitch.tv/','poster','#a980ff',[5,0,-1]),
+  make('site-search','room-home','Search the web','https://www.google.com/','pedestal','#70cad8',[-2.5,0,-3.8],true),
+  make('site-notion','room-home','Notes & ideas','https://www.notion.so/','book','#a995d0',[4.55,1.28,-3.15],true,-Math.PI/2,{kind:'shelf',surfaceId:'den-shelf'}),
+  make('site-wiki','room-home','Wikipedia','https://www.wikipedia.org/','file-box','#b8ae9d',[2.6,0,-3.6]),
+  make('site-github','room-dev','GitHub','https://github.com/','laptop','#748cff',[-5.55,1.08,-2.4],true,Math.PI/2,{kind:'desk',surfaceId:'studio-left-desk'}),
+  make('site-docs','room-dev','MDN Web Docs','https://developer.mozilla.org/','book','#6eb8ad',[-6.75,1.28,3.35],true,Math.PI/2,{kind:'shelf',surfaceId:'studio-shelf'}),
+  make('site-vercel','room-dev','Vercel','https://vercel.com/','terminal','#c8cad2',[5.55,1.08,-2.4],false,-Math.PI/2,{kind:'desk',surfaceId:'studio-right-desk'}),
+  make('site-youtube','room-media','YouTube','https://www.youtube.com/','tv','#c85c69',[0,1.15,-6.05],true,0,{kind:'media',surfaceId:'lounge-media'}),
+  make('site-spotify','room-media','Spotify','https://open.spotify.com/','radio','#69ad81',[.15,.62,-.25],true,0,{kind:'desk',surfaceId:'lounge-table'}),
+  make('site-twitch','room-media','Twitch','https://www.twitch.tv/','poster','#9574ca',[-5.75,1.5,-6.98],false,0,{kind:'wall',surfaceId:'lounge-wall-left'}),
 ];
 
 export const DEFAULT_PREFERENCES: Preferences = { lastRoomId:'room-home', trayOpen:false, trayPinned:false, reducedEffects:false, hasEntered:false, recentSearches:[], searchProvider:'duckduckgo', trayModules:['favorites','recent','note'], systemTrayEnabled:false, minimizeToTray:false, temperatureUnit:'fahrenheit', windowEffects:true,soundEnabled:false,soundVolume:.35,ambienceEnabled:true,onboardingMilestones:[] };
