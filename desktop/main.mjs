@@ -281,8 +281,10 @@ if (nativeHostLaunch) {
   app.whenReady().then(() => {
     writeSmokeResult('app-ready');
     Menu.setApplicationMenu(null);
-    if (process.defaultApp && process.argv[1]) app.setAsDefaultProtocolClient('webburrow', process.execPath, [path.resolve(process.argv[1])]);
-    else app.setAsDefaultProtocolClient('webburrow');
+    if (!isSmokeTest) {
+      if (process.defaultApp && process.argv[1]) app.setAsDefaultProtocolClient('webburrow', process.execPath, [path.resolve(process.argv[1])]);
+      else app.setAsDefaultProtocolClient('webburrow');
+    }
     mainWindow = createWindow();
     pendingCommand = deepLinkFromArguments(process.argv);
     nativeBridge = startNativeMessageServer(app, message => {

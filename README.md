@@ -9,12 +9,13 @@ WebBurrow 1.0.0 ships as a web application, an unsigned Windows desktop applicat
 ## What is included
 
 - Three distinct low-poly layouts: Home Den, Developer Studio, and Media Lounge, plus customized rooms built from those templates.
-- Thirteen site archetypes with contextual floor, desk, shelf, media-wall, and wall mounting.
+- Thirteen constructed site archetypes with beveled frames, readable silhouettes, restrained live-state cues, and contextual floor, desk, shelf, media-wall, and wall mounting.
 - Keyboard-accessible site and room management, local bookmark/configuration import, collections, notes, favorites, recents, and safe placement editing.
 - Quick Access search across local sites, rooms, collections, temporary sessions, integrations, events, feeds, notifications, actions, and explicit web-search results.
 - Optional public GitHub, manually selected Open-Meteo weather, iCalendar, and text-only RSS/Atom integrations with offline cache fallback.
 - Mini Burrow with shared layout geometry and up to four configurable cards.
 - Optional session-only browser-tab workspaces delivered by a minimal-permission Chromium companion.
+- Adaptive browser-session layouts: individual stations for small sets, labeled workstation banks for medium sets, and instanced dense racks for large transfers.
 - Optional Windows notification-area tray, validated `webburrow://` routes, and a hardened native-messaging bridge.
 - Muted-by-default generated UI/ambience audio and progressive, dismissible onboarding.
 
@@ -97,6 +98,7 @@ See [privacy and security](PRIVACY_AND_SECURITY.md) for the complete boundary mo
 - React 19, TypeScript, Vite/vinext, React Three Fiber, Drei, Rapier, Zustand, Dexie, Zod, and ICAL.js.
 - A kinematic capsule controller owns frame-by-frame movement without publishing player telemetry through React.
 - One shared room-layout registry drives world colliders, placement/mounting, migration, and the 2D Mini Burrow.
+- Dexie schema 5 preserves earlier data while layout version 3 remaps legacy placement into the authored room footprints; portable exports remain ConfigEnvelope V3.
 - Integration adapters return serializable search/tray/world view models; an isolated runtime handles cache-first refresh and stale fallback.
 - Electron uses a sandboxed renderer, context isolation, a purpose-built preload, and discriminated privileged operations.
 
@@ -111,7 +113,7 @@ npm run desktop:build
 npm run extension:build
 ```
 
-The desktop smoke harness checks startup, preload availability, renderer console errors, selected release views, performance counters, and hidden-window suspension. Full release steps are documented in [docs/building.md](docs/building.md).
+The desktop smoke harness checks startup, preload availability, renderer console errors, selected release views, performance counters, and hidden-window suspension. The current suite contains 65 fixture-driven, integration, store, persistence, contract, and Testing Library checks. Full release steps are documented in [docs/building.md](docs/building.md).
 
 ## Known limitations
 

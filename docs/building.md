@@ -61,4 +61,13 @@ The harness reports `WEBBURROW_PERFORMANCE`, hides the window, then asserts that
 
 Use an isolated current-user directory, invoke the installer silently with `/S /D=<absolute-directory>`, verify the installed executable, WebBurrow-artwork shortcut, protocol route, and JSON-valid exact-origin native-host registrations, run the installed app’s smoke mode, then invoke `Uninstall WebBurrow.exe /S`. Do not point this process at an existing installation or shared directory.
 
+The repository includes a guarded audit script. It refuses to run when it detects an unrelated current-user WebBurrow installation, confines application files to a unique Windows Temp directory, and validates cleanup:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test-installer.ps1 `
+  -Installer release/WebBurrow-Setup-1.0.0-x64.exe
+```
+
+Pass `-PreviousInstaller <path>` to verify that an earlier 1.0.0 installer can be replaced by the improved same-version build before the final uninstall check.
+
 Release binaries, unpacked output, raw QA captures, and extension output stay ignored. Only curated screenshots under `docs/screenshots` are tracked.
