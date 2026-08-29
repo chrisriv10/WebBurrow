@@ -119,7 +119,19 @@ export async function loadSnapshot(database=db):Promise<Snapshot> {
   ]);
   let rooms=safeRows(roomRows,roomSchema).filter(room=>room.lifecycle==='permanent');
   let objects=safeRows(objectRows,bookmarkObjectSchema).filter(object=>object.lifecycle==='permanent');
-  if(!rooms.length){rooms=structuredClone(DEMO_ROOMS);objects=structuredClone(DEMO_OBJECTS);}
+  const seeded=!rooms.length;
+  if(seeded){rooms=structuredClone(DEMO_ROOMS);objects=structuredClone(DEMO_OBJECTS);}
+  const layoutMigrated=!seeded&&rooms.some(room=>room.layoutVersion<CURRENT_LAYOUT_VERSION);
+  if(layoutMigrated){
+    const migrated:BookmarkObject[]=[];
+    for(const room of rooms){
+      const roomObjects=objects.filter(object=>object.roomId===room.id);
+      migrated.push(...(room.layoutVersion<CURRENT_LAYOUT_VERSION?migrateLayoutObjects(room.template,roomObjects,room.layoutVersion):roomObjects));
+    }
+    const migratedIds=new Set(migrated.map(object=>object.id));
+    objects=[...migrated,...objects.filter(object=>!migratedIds.has(object.id)&&!rooms.some(room=>room.id===object.roomId))];
+    rooms=rooms.map(room=>room.layoutVersion<CURRENT_LAYOUT_VERSION?{...room,layoutVersion:CURRENT_LAYOUT_VERSION,spawn:ROOM_LAYOUTS[room.template].spawn}:room);
+  }
   const normalized=normalizeCollections(objects,safeRows(collectionRows,collectionSchema).filter(item=>item.lifecycle==='permanent'));
   const integrations=safeRows(integrationRows,integrationConfigSchema);const existingIds=new Set(integrations.map(item=>item.id));
   const parsedPreferences=preferencesSchema.safeParse({...DEFAULT_PREFERENCES,...(prefRow?.value as Partial<Preferences>|undefined)});
@@ -131,7 +143,7 @@ export async function loadSnapshot(database=db):Promise<Snapshot> {
     integrationObjects:safeRows(integrationObjectRows,integrationObjectSchema).filter(item=>item.lifecycle==='permanent'),calendarSources:safeRows(calendarSourceRows,calendarSourceSchema),
     calendarEvents:safeRows(calendarEventRows,calendarEventSchema),feedSources:safeRows(feedSourceRows,feedSourceSchema),feedItems:safeRows(feedItemRows,feedItemSchema),notifications:safeRows(notificationRows,notificationSchema),siteIcons:safeRows(siteIconRows,siteIconSchema),
   };
-  if(!roomRows.length)await saveSnapshot(snapshot,database);
+  if(seeded||layoutMigrated)await saveSnapshot(snapshot,database);
   return snapshot;
 }
 

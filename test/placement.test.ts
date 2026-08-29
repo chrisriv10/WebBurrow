@@ -1,6 +1,7 @@
 import { describe,expect,it } from 'vitest';
 import { firstValidPlacement, interactionPoint, migrateLayoutObjects, sessionWorkspacePlacement, snapValue, suggestedMount, validatePlacement } from '@/lib/placement';
 import { DEMO_OBJECTS } from '@/lib/demo';
+import { ROOM_LAYOUTS } from '@/lib/room-layouts';
 
 describe('room placement',()=>{
   it('snaps values to the shared half-meter grid',()=>{
@@ -48,5 +49,19 @@ describe('room placement',()=>{
     const first=migrateLayoutObjects('den',legacy,2),second=migrateLayoutObjects('den',legacy,2);
     expect(first.map(object=>object.position)).toEqual(second.map(object=>object.position));
     expect(first.every(object=>object.mount||validatePlacement(object,object.position,first.filter(item=>item.id!==object.id),'den').valid)).toBe(true);
+  });
+
+  it('updates layout-v3 mount heights without moving floor objects',()=>{
+    const laptop={...DEMO_OBJECTS.find(object=>object.id==='site-github')!,position:[-5.55,1.08,-2.4] as [number,number,number]};
+    const floor={...DEMO_OBJECTS[0],id:'floor-object',roomId:'room-dev',position:[1.37,.4,2.22] as [number,number,number]};
+    const migrated=migrateLayoutObjects('studio',[laptop,floor],3);
+    expect(migrated.find(object=>object.id===laptop.id)?.position).toEqual([-5.55,1.15,-2.4]);
+    expect(migrated.find(object=>object.id===floor.id)?.position).toEqual([1.37,0,2.22]);
+  });
+
+  it('keeps the Lounge media console clear of the Burrow Lift opening',()=>{
+    const layout=ROOM_LAYOUTS.lounge,media=layout.obstacles.find(obstacle=>obstacle.id==='media-console')!;
+    expect(media.x-media.width/2).toBeGreaterThan(1.275);
+    expect(layout.anchors.find(anchor=>anchor.id==='lounge-media')?.position[0]).toBe(media.x);
   });
 });

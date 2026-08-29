@@ -16,6 +16,18 @@ describe('local persistence',()=>{
     legacy.version(4).stores({rooms:'id,createdAt,lifecycle,purpose,layoutVersion',objects:'id,roomId,url,favorite,collectionId,lifecycle,createdAt,updatedAt',activity:'id,objectId,openedAt',settings:'key',collections:'id,name,lifecycle,updatedAt',integrations:'id,enabled,updatedAt',integrationCache:'id,integrationId,expiresAt',integrationObjects:'id,integrationId,roomId,kind,lifecycle',calendarSources:'id,kind,enabled,updatedAt',calendarEvents:'id,sourceId,startAt,endAt',feedSources:'id,enabled,updatedAt',feedItems:'id,sourceId,publishedAt,read',notifications:'id,kind,createdAt,dismissedAt',siteIcons:'id,siteUrl,lastUsedAt'});
     await legacy.open();await legacy.table('rooms').put({...DEMO_ROOMS[0],layoutVersion:2,spawn:[0,1.1,5.25]});await legacy.table('objects').put({...DEMO_OBJECTS[0],position:[-4,0,-3]});await legacy.table('settings').put({key:'preferences',value:DEFAULT_PREFERENCES});legacy.close();
     const migrated=new BurrowDatabase(name);databases.push(migrated);const loaded=await loadSnapshot(migrated);
-    expect(loaded.rooms[0]).toMatchObject({id:'room-home',layoutVersion:3,spawn:[0,1.1,5.05]});expect(loaded.objects[0].id).toBe('site-search');
+    expect(loaded.rooms[0]).toMatchObject({id:'room-home',layoutVersion:4,spawn:[0,1.1,5.05]});expect(loaded.objects[0].id).toBe('site-search');
+  });
+  it('migrates layout-v3 mount heights in an existing Dexie-v5 database',async()=>{
+    const name=`layout-v5-${Math.random()}`,existing=new BurrowDatabase(name);
+    await existing.open();
+    await existing.rooms.put({...DEMO_ROOMS[1],layoutVersion:3});
+    await existing.objects.put({...DEMO_OBJECTS.find(object=>object.id==='site-github')!,position:[-5.55,1.08,-2.4]});
+    await existing.settings.put({key:'preferences',value:DEFAULT_PREFERENCES});
+    existing.close();
+    const migrated=new BurrowDatabase(name);databases.push(migrated);const loaded=await loadSnapshot(migrated);
+    expect(loaded.rooms[0].layoutVersion).toBe(4);
+    expect(loaded.objects[0]).toMatchObject({id:'site-github',position:[-5.55,1.15,-2.4]});
+    const restored=await migrated.objects.get('site-github');expect(restored?.position).toEqual([-5.55,1.15,-2.4]);
   });
 });

@@ -17,7 +17,9 @@ export const primaryClass='inline-flex items-center justify-center gap-2 rounded
 
 function Dialog({title,kicker,children,wide=false,onClose}:{title:string;kicker:string;children:ReactNode;wide?:boolean;onClose:()=>void}) {
   const ref=useRef<HTMLDivElement>(null);
-  useEffect(()=>{const key=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose();};window.addEventListener('keydown',key);ref.current?.querySelector<HTMLElement>('input,button')?.focus();return()=>window.removeEventListener('keydown',key);},[onClose]);
+  const onCloseRef=useRef(onClose);
+  useEffect(()=>{onCloseRef.current=onClose;},[onClose]);
+  useEffect(()=>{const key=(e:KeyboardEvent)=>{if(e.key==='Escape')onCloseRef.current();};window.addEventListener('keydown',key);const initialControl=ref.current?.querySelector<HTMLElement>('input:not([type="hidden"]):not([disabled]),textarea:not([disabled]),select:not([disabled])')??ref.current?.querySelector<HTMLElement>('button:not([disabled])');initialControl?.focus();return()=>window.removeEventListener('keydown',key);},[]);
   return <div className="absolute inset-0 z-40 grid place-items-center bg-[#050610]/70 p-4 backdrop-blur-sm" onMouseDown={e=>{if(e.currentTarget===e.target)onClose();}}><section ref={ref} role="dialog" aria-modal="true" aria-labelledby="dialog-title" className={`glass max-h-[88dvh] w-full ${wide?'max-w-3xl':'max-w-lg'} overflow-y-auto rounded-[26px] p-6 shadow-2xl md:p-7`}><header className="mb-6 flex items-start justify-between gap-4"><div><p className="mono m-0 text-[10px] uppercase tracking-[.2em] text-cyan-200/64">{kicker}</p><h2 id="dialog-title" className="mt-1 text-2xl font-semibold tracking-[-.035em]">{title}</h2></div><button onClick={onClose} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/5" aria-label="Close"><X size={17}/></button></header>{children}</section></div>;
 }
 

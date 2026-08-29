@@ -12,6 +12,17 @@ beforeEach(()=>useBurrow.setState({
 afterEach(cleanup);
 
 describe('accessible release surfaces',()=>{
+  it('keeps focus in add-site fields while typing',()=>{
+    useBurrow.getState().openModal('add-site');render(<ModalLayer/>);
+    const name=screen.getByLabelText('Name') as HTMLInputElement;
+    expect(document.activeElement).toBe(name);
+    fireEvent.change(name,{target:{value:'GitHub'}});
+    expect(document.activeElement).toBe(name);expect(name.value).toBe('GitHub');
+    const address=screen.getByLabelText('Website address') as HTMLInputElement;
+    address.focus();fireEvent.change(address,{target:{value:'github.com'}});
+    expect(document.activeElement).toBe(address);expect(address.value).toBe('github.com');
+  });
+
   it('customizes a room through labeled HTML controls',()=>{
     useBurrow.getState().openModal('customize-room');render(<ModalLayer/>);
     fireEvent.change(screen.getByLabelText('Room name'),{target:{value:'Quiet Reading Den'}});

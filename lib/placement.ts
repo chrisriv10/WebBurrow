@@ -93,10 +93,11 @@ export function migratePlacement(
 }
 
 export function migrateLayoutObjects(template:RoomTemplate,objects:BookmarkObject[],fromVersion:number){
-  const source=fromVersion>=2?LEGACY_ROOM_LAYOUTS_V2[template].bounds:LEGACY_PROTOTYPE_BOUNDS,placed:BookmarkObject[]=[],byId=new Map<string,BookmarkObject>();
+  const source=fromVersion>=3?ROOM_LAYOUTS[template].bounds:fromVersion>=2?LEGACY_ROOM_LAYOUTS_V2[template].bounds:LEGACY_PROTOTYPE_BOUNDS,placed:BookmarkObject[]=[],byId=new Map<string,BookmarkObject>();
   for(const object of [...objects].sort((a,b)=>a.createdAt-b.createdAt||a.id.localeCompare(b.id))){
     const anchor=object.mount&&ROOM_LAYOUTS[template].anchors.find(item=>item.id===object.mount?.surfaceId&&item.kind===object.mount.kind&&item.accepts.includes(object.archetype));
-    const migrated:BookmarkObject=anchor?{...object,position:anchor.position,rotation:anchor.rotation}:{...object,mount:undefined,position:migratePlacement(object.position,template,placed.length,placed,object,source)};
+    const preserved:[number,number,number]=[object.position[0],0,object.position[2]];
+    const migrated:BookmarkObject=anchor?{...object,position:anchor.position,rotation:anchor.rotation}:fromVersion>=3?{...object,mount:undefined,position:preserved}:{...object,mount:undefined,position:migratePlacement(object.position,template,placed.length,placed,object,source)};
     placed.push(migrated);byId.set(migrated.id,migrated);
   }
   return objects.map(object=>byId.get(object.id)??object);

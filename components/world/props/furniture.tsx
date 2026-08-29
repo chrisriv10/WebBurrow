@@ -52,7 +52,7 @@ function Sofa({room,variant}:{room:Room;variant?:LayoutFurniture['variant']}){
 }
 
 function Shelf({room,variant}:{room:Room;variant?:LayoutFurniture['variant']}){
-  const width=variant==='low'?3.4:3.05,height=variant==='low'?2.35:3.25,levels=variant==='low'?2:4;
+  const width=variant==='low'?3.4:3.05,height=variant==='low'?2.35:3.25,levels=variant==='low'?3:4;
   const frame=useRef<InstancedMesh>(null),boards=useRef<InstancedMesh>(null),books=useRef<InstancedMesh>(null);const levelYs=useMemo(()=>Array.from({length:levels},(_,index)=>.14+index*((height-.18)/(levels-1))),[height,levels]);
   const bookData=useMemo(()=>levelYs.slice(0,-1).flatMap((y,i)=>Array.from({length:i%2?4:3},(_,j)=>({position:[-width*.3+j*.45,y+.28,.05] as [number,number,number],scale:[.19+(j%2)*.07,.42+(j%3)*.08,.38] as [number,number,number],rotation:(j-1)*.035,color:['#566a82','#74667e','#607c77','#8b7867'][(i+j)%4]}))),[levelYs,width]);
   useLayoutEffect(()=>{const temp=new Object3D();[-width/2,width/2].forEach((x,index)=>{temp.position.set(x,height/2,0);temp.rotation.set(0,0,0);temp.scale.set(.18,height,.62);temp.updateMatrix();frame.current?.setMatrixAt(index,temp.matrix);});levelYs.forEach((y,index)=>{temp.position.set(0,y,0);temp.scale.set(width+.18,.14,.76);temp.updateMatrix();boards.current?.setMatrixAt(index,temp.matrix);});bookData.forEach((book,index)=>{temp.position.set(...book.position);temp.rotation.set(0,0,book.rotation);temp.scale.set(...book.scale);temp.updateMatrix();books.current?.setMatrixAt(index,temp.matrix);books.current?.setColorAt(index,new Color(book.color));});for(const mesh of [frame.current,boards.current,books.current])if(mesh){mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;}},[bookData,height,levelYs,room.appearance.decor,width]);
@@ -96,12 +96,12 @@ function CoffeeTable({room}:{room:Room}){
 
 function MediaConsole({room}:{room:Room}){
   return <group>
-    <RoundedBox args={[5.7,.72,.9]} radius={.13} position={[0,.42,0]} castShadow><meshStandardMaterial color="#202733" roughness={.9}/></RoundedBox>
-    {[-1.85,0,1.85].map((x,i)=><group key={x} position={[x,.44,.47]}>
-      <RoundedBox args={[1.62,.47,.04]} radius={.035}><meshStandardMaterial color={i===1?'#17212b':'#2f3542'} roughness={.9}/></RoundedBox>
-      <mesh position={[0,.03,.025]}><boxGeometry args={[1.1,.02,.02]}/><meshBasicMaterial color={i===1?room.accent:'#596171'}/></mesh>
+    <RoundedBox args={[4.65,.72,.9]} radius={.13} position={[0,.42,0]} castShadow><meshStandardMaterial color="#202733" roughness={.9}/></RoundedBox>
+    {[-1.45,0,1.45].map((x,i)=><group key={x} position={[x,.44,.47]}>
+      <RoundedBox args={[1.3,.47,.04]} radius={.035}><meshStandardMaterial color={i===1?'#17212b':'#2f3542'} roughness={.9}/></RoundedBox>
+      <mesh position={[0,.03,.025]}><boxGeometry args={[.88,.02,.02]}/><meshBasicMaterial color={i===1?room.accent:'#596171'}/></mesh>
     </group>)}
-    {[-2.25,2.25].map(x=><mesh key={x} position={[x,.08,0]}><cylinderGeometry args={[.07,.09,.16,12]}/><meshStandardMaterial {...SURFACES.darkMetal}/></mesh>)}
+    {[-1.82,1.82].map(x=><mesh key={x} position={[x,.08,0]}><cylinderGeometry args={[.07,.09,.16,12]}/><meshStandardMaterial {...SURFACES.darkMetal}/></mesh>)}
   </group>;
 }
 
@@ -153,7 +153,8 @@ export function RoomFurniture({room,layout}:{room:Room;layout:RoomLayoutDefiniti
     if(item.kind==='plant'&&room.appearance.decor!=='plants')return null;
     if(item.kind==='shelf'&&room.appearance.decor==='minimal')return null;
     const scale=room.appearance.furniture==='compact'?.93:room.appearance.furniture==='modular'?1.03:1;
-    return <group key={item.id} position={item.position} rotation={[0,item.rotation??0,0]} scale={item.kind==='notes-board'||item.kind==='activity-rack'?1:scale}>
+    const furnitureScale=item.kind==='notes-board'||item.kind==='activity-rack'?[1,1,1] as const:[scale,1,scale] as const;
+    return <group key={item.id} position={item.position} rotation={[0,item.rotation??0,0]} scale={furnitureScale}>
       {item.kind==='desk'?<Desk room={room} variant={item.variant}/>:item.kind==='sofa'?<Sofa room={room} variant={item.variant}/>:item.kind==='shelf'?<Shelf room={room} variant={item.variant}/>:item.kind==='lamp'?<FloorLamp room={room}/>:item.kind==='plant'?<Plant room={room}/>:item.kind==='coffee-table'?<CoffeeTable room={room}/>:item.kind==='media-console'?<MediaConsole room={room}/>:item.kind==='lounge-chair'?<LoungeChair room={room}/>:item.kind==='utility'?<UtilityRack room={room}/>:item.kind==='notes-board'?<NotesBoard/>:<ActivityRack room={room}/>} 
     </group>;
   })}</>;

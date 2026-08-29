@@ -39,7 +39,7 @@ function Terminal({object,selected,active}:ObjectProps){return <group>
   <mesh position={[-.73,1.35,.24]}><boxGeometry args={[.035,.82,.03]}/><meshStandardMaterial color={object.color} roughness={.8}/></mesh>
   </group>}
 
-function Television({object,selected,active}:ObjectProps){return <group>
+function Television({object,selected,active}:ObjectProps){return <group position={[0,-.24,0]}>
   <RoundedBox args={[2.72,1.7,.4]} position={[0,1.48,0]} radius={.16} castShadow><meshStandardMaterial {...SURFACES.graphite}/></RoundedBox>
   <ScreenPanel object={object} size={[2.35,1.3]} position={[0,1.5,.22]} selected={selected} active={active}/>
   <RoundedBox args={[1.8,.3,.72]} position={[0,.39,0]} radius={.08}><meshStandardMaterial {...SURFACES.paintedMetal}/></RoundedBox>
@@ -80,14 +80,14 @@ function Pedestal({object,active}:ObjectProps){const identity=siteIdentity(objec
   <Text font={FONT} position={[0,1.39,.54]} fontSize={.15} color="#ffffff">{identity.monogram}</Text>
   </group>}
 
-function Laptop({object,selected,active}:ObjectProps){return <group>
+function Laptop({object,selected,active}:ObjectProps){return <group position={[0,-.555,0]}>
   <RoundedBox args={[1.66,.11,1.08]} position={[0,.61,.13]} radius={.055} castShadow><meshStandardMaterial {...SURFACES.trim}/></RoundedBox>
   <RoundedBox args={[1.62,1.05,.12]} position={[0,1.14,-.34]} rotation={[-.11,0,0]} radius={.06}><meshStandardMaterial {...SURFACES.graphite}/></RoundedBox>
   <ScreenPanel object={object} size={[1.38,.82]} position={[0,1.14,-.273]} rotation={[-.11,0,0]} selected={selected} active={active}/>
   <Keyboard position={[0,.665,.2]} width={1.35}/><mesh position={[0,.67,.58]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[.45,.23]}/><meshStandardMaterial color="#343d4b" roughness={.72}/></mesh>
   </group>}
 
-function Radio({object,active}:ObjectProps){const identity=siteIdentity(object);return <group>
+function Radio({object,active}:ObjectProps){const identity=siteIdentity(object);return <group position={[0,-.15,0]}>
   <RoundedBox args={[1.68,1.1,.78]} position={[0,.7,0]} radius={.15} castShadow><meshStandardMaterial {...SURFACES.paintedMetal}/></RoundedBox>
   <mesh position={[-.43,.7,.405]}><cylinderGeometry args={[.34,.34,.05,32]}/><meshStandardMaterial color="#101621" roughness={1}/></mesh>
   {Array.from({length:4},(_,ring)=><mesh key={ring} position={[-.43,.7,.438]}><ringGeometry args={[.07+ring*.065,.083+ring*.065,24]}/><meshBasicMaterial color={ring===3&&active?object.color:'#536071'}/></mesh>)}
@@ -105,7 +105,7 @@ function FileBox({object}:ObjectProps){const identity=siteIdentity(object);retur
   <Instances limit={3}><boxGeometry args={[.6,.72,.045]}/><meshStandardMaterial roughness={1}/>{[[-.33,1.2,-.12],[0,1.28,-.02],[.34,1.18,.04]].map((p,index)=><Instance key={index} position={p as [number,number,number]} rotation={[-.15+index*.05,0,(index-1)*.04]} color={index===1?'#d8d2c6':'#aeb9c4'}/>)}</Instances>
   </group>}
 
-function DeskMonitor({object,selected,active}:ObjectProps){return <group>
+function DeskMonitor({object,selected,active}:ObjectProps){return <group position={[0,-.32,0]}>
   <RoundedBox args={[2.12,1.34,.26]} position={[0,1.43,0]} radius={.13} castShadow><meshStandardMaterial {...SURFACES.graphite}/></RoundedBox>
   <ScreenPanel object={object} size={[1.8,1.01]} position={[0,1.43,.15]} selected={selected} active={active}/>
   <mesh position={[0,.73,.01]}><cylinderGeometry args={[.075,.12,.63,14]}/><meshStandardMaterial {...SURFACES.trim}/></mesh>
@@ -119,14 +119,14 @@ function WallDisplay({object,selected,active}:ObjectProps){return <group>
   {[-1.16,1.16].map(x=><group key={x} position={[x,.48,-.04]}><RoundedBox args={[.16,.68,.32]} radius={.05}><meshStandardMaterial {...SURFACES.trim}/></RoundedBox><mesh position={[0,-.36,-.08]}><boxGeometry args={[.42,.1,.48]}/><meshStandardMaterial {...SURFACES.graphite}/></mesh></group>)}
   </group>}
 
-function Tablet({object,selected,active}:ObjectProps){return <group rotation={[-.17,0,0]}>
+function Tablet({object,selected,active}:ObjectProps){return <group position={[0,-.08,0]} rotation={[-.17,0,0]}>
   <RoundedBox args={[1.16,1.7,.12]} position={[0,.98,0]} radius={.12} castShadow><meshStandardMaterial {...SURFACES.graphite}/></RoundedBox>
   <ScreenPanel object={object} size={[.95,1.4]} position={[0,.99,.07]} selected={selected} active={active}/>
   <mesh position={[0,.2,-.17]}><boxGeometry args={[.72,.12,.7]}/><meshStandardMaterial {...SURFACES.paintedMetal}/></mesh>
   <mesh position={[0,.16,.26]}><cylinderGeometry args={[.035,.035,.5,10]}/><meshStandardMaterial {...SURFACES.trim}/></mesh>
   </group>}
 
-function CompactPortal({object,active}:ObjectProps){const identity=siteIdentity(object);return <group>
+function CompactPortal({object,active}:ObjectProps){const identity=siteIdentity(object);return <group position={[0,-.06,0]}>
   <RoundedBox args={[1.65,.24,.82]} radius={.1} position={[0,.18,0]}><meshStandardMaterial {...SURFACES.paintedMetal}/></RoundedBox>
   <mesh position={[0,1.2,0]}><torusGeometry args={[.7,.095,12,48]}/><meshStandardMaterial color="#364253" emissive={object.color} emissiveIntensity={active?.25:.08} roughness={.78}/></mesh>
   <mesh position={[0,1.2,-.035]}><circleGeometry args={[.61,40]}/><meshStandardMaterial color="#09121e" emissive={object.color} emissiveIntensity={active?.12:.035} roughness={1}/></mesh>
