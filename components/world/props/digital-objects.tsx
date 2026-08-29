@@ -47,7 +47,7 @@ function Television({object,selected,active}:ObjectProps){return <group position
   {[-1.08,1.08].map(x=><group key={x} position={[x,1.48,.23]}>{[-.28,-.14,0,.14,.28].map(y=><mesh key={y} position={[0,y,0]}><circleGeometry args={[.022,10]}/><meshBasicMaterial color="#596575"/></mesh>)}</group>)}
   </group>}
 
-function Book({object,active}:ObjectProps){const identity=siteIdentity(object),shelfMounted=object.mount?.kind==='shelf';return <group position={[0,shelfMounted?.44:.9,0]} scale={shelfMounted?.48:1} rotation={[0,0,-.055]}>
+function Book({object,active}:ObjectProps){const identity=siteIdentity(object),shelfMounted=object.mount?.kind==='shelf';return <group position={[0,shelfMounted?.44:.9,shelfMounted?.44:0]} scale={shelfMounted?.48:1} rotation={[0,0,-.055]}>
   <RoundedBox args={[1.1,1.78,.38]} radius={.08} castShadow><meshStandardMaterial color={object.color} roughness={.92}/></RoundedBox>
   <RoundedBox args={[.91,1.56,.08]} position={[.04,0,.22]} radius={.035}><meshStandardMaterial color="#202432" roughness={1}/></RoundedBox>
   <mesh position={[-.48,0,.23]}><boxGeometry args={[.065,1.48,.05]}/><meshStandardMaterial color="#d9d2c5" roughness={1}/></mesh>

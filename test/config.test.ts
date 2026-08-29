@@ -12,6 +12,6 @@ describe('configuration import/export',()=>{
   it('excludes browser identity and icon cache data from portable exports',()=>{const config=makeConfig({...snapshot,objects:[{...DEMO_OBJECTS[0],browserReference:{workspaceId:'w',tabId:2,receivedAt:1},siteIconId:'icon'}],siteIcons:[{id:'icon',siteUrl:'https://www.google.com/',mimeType:'image/png',data:'data',createdAt:1,lastUsedAt:1}]});expect(config.objects[0].browserReference).toBeUndefined();expect(config.objects[0].siteIconId).toBeUndefined();expect('siteIcons' in config).toBe(false);});
   it('keeps Config V3 while migrating 1.0 layout-v2 positions',()=>{
     const legacy=makeConfig(snapshot);legacy.rooms=legacy.rooms.map(room=>({...room,layoutVersion:2,spawn:[0,1.1,5.25]}));legacy.objects=legacy.objects.map(object=>({...object,position:[object.position[0],0,object.position[2]]}));
-    const migrated=parseConfig(JSON.stringify(legacy));expect(migrated.schemaVersion).toBe(3);expect(migrated.rooms.every(room=>room.layoutVersion===11)).toBe(true);expect(migrated.objects.map(object=>object.id)).toEqual(legacy.objects.map(object=>object.id));
+    const migrated=parseConfig(JSON.stringify(legacy));expect(migrated.schemaVersion).toBe(3);expect(migrated.rooms.every(room=>room.layoutVersion===13)).toBe(true);expect(migrated.objects.map(object=>object.id)).toEqual(legacy.objects.map(object=>object.id));
   });
 });

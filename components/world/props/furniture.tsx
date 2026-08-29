@@ -47,7 +47,7 @@ function Sofa({room,variant}:{room:Room;variant?:LayoutFurniture['variant']}){
     <instancedMesh ref={seats} args={[undefined,undefined,count]}><RoundedBoxGeometry args={[1,1,1]} radius={.12}/><meshStandardMaterial color="#ffffff" roughness={1}/></instancedMesh>
     <instancedMesh ref={backs} args={[undefined,undefined,count]}><RoundedBoxGeometry args={[1,1,1]} radius={.11}/><meshStandardMaterial color="#ffffff" roughness={1}/></instancedMesh>
     <instancedMesh ref={feet} args={[undefined,undefined,2]}><cylinderGeometry args={[.5,.6,1,12]}/><meshStandardMaterial color="#171d28" roughness={.86}/></instancedMesh>
-    <RoundedBox args={[.62,.18,.46]} radius={.08} position={[width*.18,.94,.24]} rotation={[0,0,-.05]}><meshStandardMaterial color="#514b63" roughness={1}/></RoundedBox>
+    <RoundedBox args={[.68,.34,.2]} radius={.1} position={[width*.28,1.13,-.31]} rotation={[0,0,-.1]}><meshStandardMaterial color="#514b63" roughness={1}/></RoundedBox>
   </group>;
 }
 
@@ -107,8 +107,8 @@ function MediaConsole({room}:{room:Room}){
 
 function LoungeChair(){
   return <group>
-    <RoundedBox args={[1.55,1.58,.36]} radius={.22} position={[0,1.2,-.42]} rotation={[-.1,0,0]} castShadow><meshStandardMaterial color="#303748" roughness={.96}/></RoundedBox>
-    <RoundedBox args={[1.12,.92,.2]} radius={.16} position={[0,1.25,-.18]} rotation={[-.08,0,0]}><meshStandardMaterial color={SURFACES.fabricAlt.color} roughness={1}/></RoundedBox>
+    <RoundedBox args={[1.55,1.58,.36]} radius={.22} position={[0,1.2,-.42]} rotation={[.1,0,0]} castShadow><meshStandardMaterial color="#303748" roughness={.96}/></RoundedBox>
+    <RoundedBox args={[1.12,.92,.2]} radius={.16} position={[0,1.25,-.18]} rotation={[.08,0,0]}><meshStandardMaterial color={SURFACES.fabricAlt.color} roughness={1}/></RoundedBox>
     <RoundedBox args={[1.3,.3,1.18]} radius={.14} position={[0,.62,.08]}><meshStandardMaterial color={SURFACES.fabricAlt.color} roughness={1}/></RoundedBox>
     {[-.72,.72].map(x=><RoundedBox key={x} args={[.24,.52,1.04]} radius={.11} position={[x,.78,.08]}><meshStandardMaterial color="#303748" roughness={1}/></RoundedBox>)}
     <mesh position={[0,.23,0]}><cylinderGeometry args={[.1,.15,.5,14]}/><meshStandardMaterial {...SURFACES.darkMetal}/></mesh>

@@ -32,7 +32,7 @@ export function WebsiteObject({object,selected,near,placementValid,onBeginDrag}:
   const activate=(event:ThreeEvent<PointerEvent>)=>{event.stopPropagation();if(editMode){setSelected(object.id);onBeginDrag(object.id);}};
   return <group position={object.position} rotation={[0,object.rotation,0]} userData={{interactionId:object.id}} onPointerDown={activate} onPointerOver={event=>{event.stopPropagation();setHovered(true);}} onPointerOut={()=>setHovered(false)}>
     <group ref={motion}><DigitalObject object={object} selected={selected} active={active}/></group>
-    {(selected||near||hovered)&&<group position={[0,object.mount?.kind==='shelf'?1.45:2.78,.1]}>
+    {(selected||near||hovered)&&<group position={[0,object.mount?.kind==='shelf'?1.45:2.78,object.mount?.kind==='shelf'?.48:.1]}>
       <Text font={FONT} fontSize={.18} maxWidth={2.25} color="#f7f8fc" anchorX="center" outlineWidth={.012} outlineColor="#080a12">{threeText(object.name)}</Text>
       <Text font={MONO} position={[0,-.25,0]} fontSize={.07} maxWidth={2.1} color={object.color} anchorX="center">{threeText(`${identity.category.toUpperCase()} · ${identity.domain}`)}</Text>
     </group>}
