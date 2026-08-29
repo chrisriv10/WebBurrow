@@ -1,6 +1,8 @@
 import { configEnvelopeSchema, type ConfigEnvelope, type ConfigEnvelopeV3 } from './types';
 import type { Snapshot, SnapshotInput } from './db';
 import { completeSnapshot, normalizeCollections } from './db';
+import { migrateLayoutObjects } from './placement';
+import { CURRENT_LAYOUT_VERSION, ROOM_LAYOUTS } from './room-layouts';
 
 function permanentSnapshot(snapshot:Snapshot) {
   const rooms=snapshot.rooms.filter(room=>room.lifecycle==='permanent');const roomIds=new Set(rooms.map(room=>room.id));
@@ -15,12 +17,30 @@ function permanentSnapshot(snapshot:Snapshot) {
 
 export function makeConfig(input:SnapshotInput):ConfigEnvelopeV3 { return {schemaVersion:3,exportedAt:Date.now(),...permanentSnapshot(completeSnapshot(input))}; }
 
+function upgradeLayouts(config:ConfigEnvelopeV3,forceVersion?:number):ConfigEnvelopeV3 {
+  const objects:ConfigEnvelopeV3['objects']=[];
+  const rooms=config.rooms.map(room=>{
+    const fromVersion=forceVersion??room.layoutVersion,roomObjects=config.objects.filter(object=>object.roomId===room.id);
+    objects.push(...(fromVersion<CURRENT_LAYOUT_VERSION?migrateLayoutObjects(room.template,roomObjects,fromVersion):roomObjects));
+    return {...room,layoutVersion:CURRENT_LAYOUT_VERSION,spawn:ROOM_LAYOUTS[room.template].spawn};
+  });
+  const known=new Set(objects.map(object=>object.id));objects.push(...config.objects.filter(object=>!known.has(object.id)&&!config.rooms.some(room=>room.id===object.roomId)));
+  const roomById=new Map(rooms.map(room=>[room.id,room]));
+  const integrationObjects=config.integrationObjects.map(object=>{
+    const room=roomById.get(object.roomId),original=config.rooms.find(item=>item.id===object.roomId);
+    if(!room||!original||original.layoutVersion>=CURRENT_LAYOUT_VERSION)return object;
+    const anchor=ROOM_LAYOUTS[room.template].integrations.find(item=>item.kind===object.kind);
+    return anchor?{...object,position:anchor.position,rotation:anchor.rotation}:object;
+  });
+  return {...config,rooms,objects,integrationObjects};
+}
+
 export function migrateConfig(input:ConfigEnvelope):ConfigEnvelopeV3 {
-  if(input.schemaVersion===3)return input;
-  if(input.schemaVersion===2)return{...input,schemaVersion:3};
+  if(input.schemaVersion===3)return upgradeLayouts(input);
+  if(input.schemaVersion===2)return upgradeLayouts({...input,schemaVersion:3});
   const normalized=normalizeCollections(input.objects,[]);
-  return {schemaVersion:3,exportedAt:input.exportedAt,rooms:input.rooms,objects:normalized.objects,activity:input.activity,note:input.note,preferences:input.preferences,
-    collections:normalized.collections,integrations:[],integrationObjects:[],calendarSources:[],calendarEvents:[],feedSources:[],feedItems:[],notifications:[]};
+  return upgradeLayouts({schemaVersion:3,exportedAt:input.exportedAt,rooms:input.rooms,objects:normalized.objects,activity:input.activity,note:input.note,preferences:input.preferences,
+    collections:normalized.collections,integrations:[],integrationObjects:[],calendarSources:[],calendarEvents:[],feedSources:[],feedItems:[],notifications:[]},1);
 }
 
 export function parseConfig(input:string):ConfigEnvelopeV3 {

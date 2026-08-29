@@ -2,9 +2,9 @@ import { DEFAULT_ROOM_APPEARANCE, type BookmarkObject, type Preferences, type Ro
 
 const now = Date.now();
 export const DEMO_ROOMS: Room[] = [
-  { id:'room-home', name:'Home Den', template:'den', accent:'#a78bfa', spawn:[0,1.1,5.25], lifecycle:'permanent', purpose:'standard',layoutVersion:2,appearance:{...DEFAULT_ROOM_APPEARANCE,icon:'home',wall:'soft-slate',floor:'dark-wood',lighting:'cozy-night',exterior:'quiet-rain',furniture:'compact',decor:'books'}, isDemo:true, createdAt:now },
-  { id:'room-dev', name:'Developer Studio', template:'studio', accent:'#74c7ec', spawn:[0,1.1,6.15], lifecycle:'permanent', purpose:'standard',layoutVersion:2,appearance:{...DEFAULT_ROOM_APPEARANCE,icon:'code',wall:'navy-panel',floor:'technical',lighting:'focus',exterior:'city-night',furniture:'modular',decor:'technical'}, isDemo:true, createdAt:now+1 },
-  { id:'room-media', name:'Media Lounge', template:'lounge', accent:'#c68cff', spawn:[0,1.1,5.8], lifecycle:'permanent', purpose:'standard',layoutVersion:2,appearance:{...DEFAULT_ROOM_APPEARANCE,icon:'media',wall:'graphite',floor:'woven',lighting:'media',exterior:'blue-hour',furniture:'classic',decor:'plants'}, isDemo:true, createdAt:now+2 },
+  { id:'room-home', name:'Home Den', template:'den', accent:'#a78bfa', spawn:[0,1.1,5.05], lifecycle:'permanent', purpose:'standard',layoutVersion:3,appearance:{...DEFAULT_ROOM_APPEARANCE,icon:'home',wall:'soft-slate',floor:'dark-wood',lighting:'cozy-night',exterior:'quiet-rain',furniture:'compact',decor:'books',windowEffect:'weather',ambience:'soft-hum'}, isDemo:true, createdAt:now },
+  { id:'room-dev', name:'Developer Studio', template:'studio', accent:'#74c7ec', spawn:[0,1.1,6.25], lifecycle:'permanent', purpose:'standard',layoutVersion:3,appearance:{...DEFAULT_ROOM_APPEARANCE,icon:'code',wall:'navy-panel',floor:'technical',lighting:'focus',exterior:'city-night',furniture:'modular',decor:'technical',windowEffect:'cinematic',ambience:'soft-hum'}, isDemo:true, createdAt:now+1 },
+  { id:'room-media', name:'Media Lounge', template:'lounge', accent:'#c68cff', spawn:[0,1.1,5.75], lifecycle:'permanent', purpose:'standard',layoutVersion:3,appearance:{...DEFAULT_ROOM_APPEARANCE,icon:'media',wall:'graphite',floor:'woven',lighting:'media',exterior:'blue-hour',furniture:'classic',decor:'plants',windowEffect:'cinematic',ambience:'quiet'}, isDemo:true, createdAt:now+2 },
 ];
 
 const make = (id:string, roomId:string, name:string, url:string, archetype:BookmarkObject['archetype'], color:string, position:[number,number,number], favorite=false):BookmarkObject => ({

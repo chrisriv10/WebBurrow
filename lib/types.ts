@@ -16,6 +16,8 @@ export const roomAppearanceSchema = z.object({
   exterior:z.enum(['city-night','quiet-rain','snowfall','blue-hour','deep-space']).default('city-night'),
   furniture:z.enum(['classic','compact','modular']).default('classic'),
   decor:z.enum(['plants','books','technical','minimal']).default('plants'),
+  windowEffect:z.enum(['still','weather','cinematic']).default('weather'),
+  ambience:z.enum(['quiet','soft-hum','weather']).default('quiet'),
 });
 
 export const DEFAULT_ROOM_APPEARANCE = roomAppearanceSchema.parse({});
@@ -83,6 +85,7 @@ export const configEnvelopeSchema = z.union([configEnvelopeV1Schema,configEnvelo
 
 export const browserWorkspaceSchema=z.object({
   id:z.string(),roomId:z.string(),collectionId:z.string(),name:z.string().min(1).max(60),sourceScope:z.enum(['selection','window','group']),
+  layoutMode:z.enum(['auto','grid','domain','browser-group']).default('auto'),
   createdAt:z.number(),updatedAt:z.number(),arrivalStartedAt:z.number().optional(),
 });
 

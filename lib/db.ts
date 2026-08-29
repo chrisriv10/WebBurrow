@@ -7,8 +7,8 @@ import {
   type FeedItem, type FeedSource, type IntegrationCache, type IntegrationConfig, type IntegrationObject, type Preferences, type Room, type SiteIcon,
 } from './types';
 import { DEFAULT_PREFERENCES, DEMO_OBJECTS, DEMO_ROOMS } from './demo';
-import { migratePlacement } from './placement';
-import { ROOM_LAYOUTS } from './room-layouts';
+import { migrateLayoutObjects } from './placement';
+import { CURRENT_LAYOUT_VERSION, ROOM_LAYOUTS } from './room-layouts';
 import { recordIndexedDbWrite } from './performance';
 
 type Setting = { key:string; value:unknown };
@@ -49,14 +49,29 @@ export class BurrowDatabase extends Dexie {
       integrationObjects:'id,integrationId,roomId,kind,lifecycle', calendarSources:'id,kind,enabled,updatedAt', calendarEvents:'id,sourceId,startAt,endAt',
       feedSources:'id,enabled,updatedAt', feedItems:'id,sourceId,publishedAt,read', notifications:'id,kind,createdAt,dismissedAt',siteIcons:'id,siteUrl,lastUsedAt',
     }).upgrade(async transaction=>{
-      const roomTable=transaction.table('rooms');const objectTable=transaction.table('objects');
-      const rooms=(await roomTable.toArray()).flatMap(value=>{const parsed=roomSchema.safeParse(value);return parsed.success?[parsed.data]:[];});
-      const roomById=new Map(rooms.map(room=>[room.id,room]));const migratedObjects:BookmarkObject[]=[];
-      for(const raw of await objectTable.toArray()){const parsed=bookmarkObjectSchema.safeParse(raw);if(!parsed.success)continue;const object=parsed.data;const room=roomById.get(object.roomId);if(room){object.position=migratePlacement(object.position,room.template,migratedObjects.length,migratedObjects,object);migratedObjects.push(object);}}
-      await roomTable.bulkPut(rooms.map(room=>({...room,layoutVersion:2,spawn:ROOM_LAYOUTS[room.template].spawn})));
-      await objectTable.clear();await objectTable.bulkPut(migratedObjects);
+      const roomTable=transaction.table('rooms');
+      const rooms=(await roomTable.toArray()).flatMap(value=>{const parsed=roomSchema.safeParse(value);if(!parsed.success)return[];const raw=value as {layoutVersion?:unknown};return[{...parsed.data,layoutVersion:typeof raw.layoutVersion==='number'?raw.layoutVersion:1}];});
+      await roomTable.bulkPut(rooms);
       const settings=transaction.table('settings');const pref=await settings.get('preferences') as Setting|undefined;
       if(pref)await settings.put({key:'preferences',value:{...DEFAULT_PREFERENCES,...(pref.value as Partial<Preferences>)}});
+    });
+    this.version(5).stores({
+      rooms:'id,createdAt,lifecycle,purpose,layoutVersion',objects:'id,roomId,url,favorite,collectionId,lifecycle,createdAt,updatedAt',activity:'id,objectId,openedAt',settings:'key',
+      collections:'id,name,lifecycle,updatedAt',integrations:'id,enabled,updatedAt',integrationCache:'id,integrationId,expiresAt',integrationObjects:'id,integrationId,roomId,kind,lifecycle',
+      calendarSources:'id,kind,enabled,updatedAt',calendarEvents:'id,sourceId,startAt,endAt',feedSources:'id,enabled,updatedAt',feedItems:'id,sourceId,publishedAt,read',
+      notifications:'id,kind,createdAt,dismissedAt',siteIcons:'id,siteUrl,lastUsedAt',
+    }).upgrade(async transaction=>{
+      const roomTable=transaction.table('rooms'),objectTable=transaction.table('objects');
+      const rooms=(await roomTable.toArray()).flatMap(value=>{const parsed=roomSchema.safeParse(value);return parsed.success?[parsed.data]:[];});
+      const objects=(await objectTable.toArray()).flatMap(value=>{const parsed=bookmarkObjectSchema.safeParse(value);return parsed.success?[parsed.data]:[];});
+      const migrated:BookmarkObject[]=[];
+      for(const room of rooms){
+        const roomObjects=objects.filter(object=>object.roomId===room.id);
+        migrated.push(...(room.layoutVersion<CURRENT_LAYOUT_VERSION?migrateLayoutObjects(room.template,roomObjects,room.layoutVersion):roomObjects));
+      }
+      const known=new Set(migrated.map(object=>object.id));migrated.push(...objects.filter(object=>!known.has(object.id)&&!rooms.some(room=>room.id===object.roomId)));
+      await roomTable.clear();await roomTable.bulkPut(rooms.map(room=>({...room,layoutVersion:CURRENT_LAYOUT_VERSION,spawn:ROOM_LAYOUTS[room.template].spawn})));
+      await objectTable.clear();await objectTable.bulkPut(migrated);
     });
   }
 }

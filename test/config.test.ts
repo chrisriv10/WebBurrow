@@ -10,4 +10,8 @@ describe('configuration import/export',()=>{
   it('merges without duplicating normalized URLs',()=>{const incoming=makeConfig(snapshot);const merged=mergeConfig(snapshot,incoming);expect(merged.objects).toHaveLength(snapshot.objects.length);});
   it('excludes cached feed content and notifications from exports',()=>{const config=makeConfig({...snapshot,feedItems:[{id:'feed-item',sourceId:'feed',title:'Cached',url:'https://example.com/a',source:'Example',publishedAt:1,read:false,firstSeenAt:1}],notifications:[{id:'note',kind:'error',title:'Refresh failed',body:'Offline',createdAt:1}]});expect(config.feedItems).toEqual([]);expect(config.notifications).toEqual([]);});
   it('excludes browser identity and icon cache data from portable exports',()=>{const config=makeConfig({...snapshot,objects:[{...DEMO_OBJECTS[0],browserReference:{workspaceId:'w',tabId:2,receivedAt:1},siteIconId:'icon'}],siteIcons:[{id:'icon',siteUrl:'https://www.google.com/',mimeType:'image/png',data:'data',createdAt:1,lastUsedAt:1}]});expect(config.objects[0].browserReference).toBeUndefined();expect(config.objects[0].siteIconId).toBeUndefined();expect('siteIcons' in config).toBe(false);});
+  it('keeps Config V3 while migrating 1.0 layout-v2 positions',()=>{
+    const legacy=makeConfig(snapshot);legacy.rooms=legacy.rooms.map(room=>({...room,layoutVersion:2,spawn:[0,1.1,5.25]}));legacy.objects=legacy.objects.map(object=>({...object,position:[object.position[0],0,object.position[2]]}));
+    const migrated=parseConfig(JSON.stringify(legacy));expect(migrated.schemaVersion).toBe(3);expect(migrated.rooms.every(room=>room.layoutVersion===3)).toBe(true);expect(migrated.objects.map(object=>object.id)).toEqual(legacy.objects.map(object=>object.id));
+  });
 });

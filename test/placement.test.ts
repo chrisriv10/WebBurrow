@@ -1,5 +1,5 @@
 import { describe,expect,it } from 'vitest';
-import { firstValidPlacement, interactionPoint, sessionWorkspacePlacement, snapValue, suggestedMount, validatePlacement } from '@/lib/placement';
+import { firstValidPlacement, interactionPoint, migrateLayoutObjects, sessionWorkspacePlacement, snapValue, suggestedMount, validatePlacement } from '@/lib/placement';
 import { DEMO_OBJECTS } from '@/lib/demo';
 
 describe('room placement',()=>{
@@ -41,5 +41,12 @@ describe('room placement',()=>{
     const positions=Array.from({length:100},(_,index)=>sessionWorkspacePlacement(index,'studio'));
     expect(new Set(positions.map(position=>position.join(','))).size).toBe(100);
     expect(positions.every(([x,,z])=>x>=-8&&x<=8&&z>=-8.5&&z<=7.5)).toBe(true);
+  });
+
+  it('migrates layout-v2 objects deterministically into the polygonal layouts',()=>{
+    const legacy=DEMO_OBJECTS.filter(object=>object.roomId==='room-home').map((object,index)=>({...object,position:[-5+index*4,0,-5+index] as [number,number,number]}));
+    const first=migrateLayoutObjects('den',legacy,2),second=migrateLayoutObjects('den',legacy,2);
+    expect(first.map(object=>object.position)).toEqual(second.map(object=>object.position));
+    expect(first.every(object=>object.mount||validatePlacement(object,object.position,first.filter(item=>item.id!==object.id),'den').valid)).toBe(true);
   });
 });
