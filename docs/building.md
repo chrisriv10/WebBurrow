@@ -14,7 +14,7 @@ npm run dev
 npm run build
 ```
 
-The production web build remains Sites-compatible, which is why `.openai/hosting.json` is retained with `d1` and `r2` set to `null`. Building does not deploy anything.
+The production web build uses the local vinext/Vite workflow and does not include deployment configuration or perform deployment.
 
 ## Desktop build
 
