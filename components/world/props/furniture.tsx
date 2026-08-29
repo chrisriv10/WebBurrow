@@ -131,7 +131,7 @@ function NotesBoard(){
   return <group onClick={()=>setTrayOpen(true)} userData={{interactionId:'__notes'}}>
     <RoundedBox args={[2.55,1.62,.2]} radius={.1}><meshStandardMaterial color="#30323b" roughness={.96}/></RoundedBox>
     <RoundedBox args={[2.23,1.3,.055]} position={[0,0,.13]} radius={.035}><meshStandardMaterial {...SURFACES.paper}/></RoundedBox>
-    <Text font={MONO} position={[-.9,.44,.17]} anchorX="left" maxWidth={1.8} fontSize={.075} lineHeight={1.4} color="#34333a">POCKET NOTE{`\n\n`}{threeText((note||'A thought can live here.').slice(0,62))}</Text>
+    <Text font={MONO} position={[-.9,.44,.17]} anchorX="left" maxWidth={1.8} fontSize={.075} lineHeight={1.4} color="#34333a">POCKET NOTE{`\n\n`}{threeText((note||'A thought can live here.').trim().slice(0,62))}</Text>
     <Instances limit={2}><circleGeometry args={[.045,12]}/><meshBasicMaterial/><Instance position={[-.76,.57,.18]} color="#836f87"/><Instance position={[.64,.57,.18]} color="#7580a0"/></Instances>
   </group>;
 }

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, shell } from 'electron';
+import { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, screen, shell } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,6 +26,7 @@ const nativeHostLaunch = process.argv.some(value => value.startsWith('chrome-ext
 const smokeUserDataPath = isSmokeTest ? path.join(app.getPath('temp'),`webburrow-smoke-${process.pid}`) : null;
 if(smokeUserDataPath)app.setPath('userData',smokeUserDataPath);
 let mainWindow;
+let trayWindow;
 let nativeTray;
 let trayPreferences = { enabled:false, minimizeToTray:false };
 let traySnapshot = { favorites:[], recent:[] };
@@ -52,6 +53,38 @@ function showWindow(command) {
   if (command) sendCommand(command);
 }
 
+function positionTrayWindow() {
+  if (!trayWindow || trayWindow.isDestroyed()) return;
+  const { workArea } = screen.getPrimaryDisplay();
+  const [width, height] = trayWindow.getSize();
+  trayWindow.setPosition(Math.round(workArea.x + workArea.width - width - 12), Math.round(workArea.y + workArea.height - height - 12), false);
+}
+
+function createTrayWindow() {
+  if (trayWindow && !trayWindow.isDestroyed()) return trayWindow;
+  trayWindow = new BrowserWindow({
+    width:420,height:780,minWidth:390,minHeight:560,maxWidth:420,maxHeight:900,
+    show:false,frame:false,resizable:false,fullscreenable:false,skipTaskbar:true,
+    alwaysOnTop:true,backgroundColor:'#080913',title:'WebBurrow Burrow Tray',
+    webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true,preload:path.join(appDirectory,'preload.cjs')},
+  });
+  trayWindow.setAlwaysOnTop(true,'floating');
+  trayWindow.webContents.setWindowOpenHandler(({url})=>{if(isSafeExternalUrl(url))void shell.openExternal(url);return{action:'deny'};});
+  trayWindow.webContents.on('will-navigate',(event,url)=>{if(url!==trayWindow.webContents.getURL()){event.preventDefault();if(isSafeExternalUrl(url))void shell.openExternal(url);}});
+  trayWindow.once('ready-to-show',()=>{positionTrayWindow();trayWindow?.showInactive();});
+  trayWindow.on('closed',()=>{trayWindow=undefined;});
+  const developmentUrl=process.env.WEBBURROW_DEV_URL;
+  if(developmentUrl)void trayWindow.loadURL(`${developmentUrl}${developmentUrl.includes('?')?'&':'?'}tray=1`);
+  else void trayWindow.loadFile(rendererPath,{query:{tray:'1'}});
+  return trayWindow;
+}
+
+function toggleTrayWindow() {
+  const window=createTrayWindow();
+  if(window.isVisible()){window.hide();return;}
+  positionTrayWindow();window.showInactive();
+}
+
 function sanitizedMenuItems(items) {
   if (!Array.isArray(items)) return [];
   return items.slice(0, 8).flatMap(item => item && typeof item.name === 'string' && typeof item.url === 'string' && isSafeExternalUrl(item.url)
@@ -59,14 +92,14 @@ function sanitizedMenuItems(items) {
 }
 
 function rebuildTray() {
-  if (!trayPreferences.enabled) { nativeTray?.destroy(); nativeTray = undefined; return; }
-  if (!nativeTray) { nativeTray = new Tray(nativeImage.createFromPath(path.join(appDirectory, 'icon.png'))); nativeTray.setToolTip('WebBurrow · Burrow Tray'); nativeTray.on('click', () => showWindow({ type:'toggle-tray' })); nativeTray.on('double-click', () => showWindow({ type:'show' })); }
+  if (!trayPreferences.enabled) { nativeTray?.destroy(); nativeTray = undefined; if(trayWindow&&!trayWindow.isDestroyed())trayWindow.destroy(); trayWindow=undefined; return; }
+  if (!nativeTray) { nativeTray = new Tray(nativeImage.createFromPath(path.join(appDirectory, 'icon.png'))); nativeTray.setToolTip('WebBurrow · Burrow Tray'); nativeTray.on('click', () => toggleTrayWindow()); nativeTray.on('double-click', () => showWindow({ type:'show' })); }
   const linkMenu = (items) => items.length ? items.map(item => ({ label:item.name, click:() => void shell.openExternal(item.url) })) : [{ label:'Nothing here yet', enabled:false }];
   nativeTray.setContextMenu(Menu.buildFromTemplate([
     { label:'Open WebBurrow', click:() => showWindow({ type:'show' }) },
     { label:'Quick Access', click:() => showWindow({ type:'quick-access' }) },
     { label:'Add URL', click:() => showWindow({ type:'add', payload:{} }) },
-    { label:'Toggle Mini Burrow', click:() => showWindow({ type:'toggle-tray' }) },
+    { label:'Toggle Burrow Tray', click:() => toggleTrayWindow() },
     { type:'separator' },
     { label:'Favorites', submenu:linkMenu(traySnapshot.favorites) },
     { label:'Recent', submenu:linkMenu(traySnapshot.recent) },
@@ -219,6 +252,12 @@ function createWindow() {
         );
         await new Promise((resolve) => setTimeout(resolve, 900));
       }
+      if (qaView === 'navigator') {
+        await window.webContents.executeJavaScript(
+          `document.querySelector('[aria-label="Open Navigator"]')?.click()`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
       await window.webContents.executeJavaScript(`window.__WEBBURROW_RESET_METRICS__?.()`);
       await new Promise((resolve) => setTimeout(resolve, 2200));
       if (screenshotPath) {
@@ -262,6 +301,12 @@ ipcMain.handle('webburrow:integration-request', (_event, request) => hardenedInt
 ipcMain.handle('webburrow:site-icon', async (_event, request) => {try{const response=await hardenedIntegrationRequest({kind:'favicon',pageUrl:request?.pageUrl,iconUrl:request?.iconUrl});const source=nativeImage.createFromBuffer(Buffer.from(response.body,'base64'));if(source.isEmpty())throw new Error('The response is not a supported image.');const size=source.getSize(),scale=Math.min(1,64/Math.max(size.width,size.height)),resized=source.resize({width:Math.max(1,Math.round(size.width*scale)),height:Math.max(1,Math.round(size.height*scale)),quality:'best'}),png=resized.toPNG();if(png.byteLength>64*1024)throw new Error('The re-encoded icon is too large.');return{ok:true,dataUrl:`data:image/png;base64,${png.toString('base64')}`};}catch(error){return{ok:false,error:String(error?.message||'The icon could not be fetched.').slice(0,240)};}});
 ipcMain.handle('webburrow:open-external', async (_event, url) => { if (!isSafeExternalUrl(url)) return false;if(await nativeBridge?.focus(url))return true; await shell.openExternal(url, { activate:true }); return true; });
 ipcMain.on('webburrow:tray-preferences', (_event, value) => { trayPreferences = { enabled:value?.enabled === true, minimizeToTray:value?.minimizeToTray === true }; rebuildTray(); });
+ipcMain.on('webburrow:close-tray-window', () => { if(trayWindow && !trayWindow.isDestroyed()) trayWindow.hide(); });
+ipcMain.on('webburrow:show-main', (_event, command) => {
+  const commands = { show:{type:'show'}, 'quick-access':{type:'quick-access'}, add:{type:'add',payload:{}}, import:{type:'import'}, edit:{type:'edit'}, customize:{type:'customize'} };
+  const selected = typeof command === 'string' && Object.prototype.hasOwnProperty.call(commands, command) ? commands[command] : commands.show;
+  showWindow(selected);
+});
 ipcMain.on('webburrow:tray-snapshot', (_event, value) => { traySnapshot = { favorites:sanitizedMenuItems(value?.favorites), recent:sanitizedMenuItems(value?.recent) }; rebuildTray(); });
 ipcMain.on('webburrow:browser-context', (_event, value) => { browserContext = {
   workspaces:Array.isArray(value?.workspaces)?value.workspaces.slice(0,30).flatMap(item=>item&&typeof item.id==='string'&&typeof item.name==='string'&&Number.isInteger(item.tabCount)&&['selection','window','group'].includes(item.sourceScope)?[{id:item.id.slice(0,100),name:item.name.slice(0,60),tabCount:Math.max(0,Math.min(100,item.tabCount)),sourceScope:item.sourceScope}]:[]):[],
@@ -274,6 +319,7 @@ if (nativeHostLaunch) {
 } else if (!app.requestSingleInstanceLock() && !isSmokeTest) {
   app.quit();
 } else {
+  app.on('before-quit',()=>{quitting=true;trayWindow?.destroy();});
   app.on('second-instance', (_event, argv) => {
     showWindow(deepLinkFromArguments(argv) || { type:'show' });
   });

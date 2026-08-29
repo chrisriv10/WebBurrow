@@ -2,6 +2,7 @@ import type { Archetype, BookmarkObject, RoomTemplate } from './types';
 import { LEGACY_ROOM_LAYOUTS_V2, ROOM_LAYOUTS, defaultMount, pointInsideOutline, type LayoutBounds } from './room-layouts';
 
 export const ROOM_BOUNDS = ROOM_LAYOUTS.studio.bounds;
+const OBJECT_CLEARANCE = .45;
 
 const FOOTPRINTS:Record<Archetype,number> = {
   terminal:.95,tv:1.4,book:.72,poster:.82,arcade:.92,pedestal:.78,laptop:.82,radio:.72,'file-box':.72,
@@ -43,7 +44,7 @@ export function validatePlacement(
   if(Math.hypot(x-layout.spawn[0],z-layout.spawn[2])<1.3+footprint)return{position,valid:false,reason:'Keep the arrival area clear.'};
   if(!insideWithPadding(template,x,z,footprint*.55))return{position,valid:false,reason:'Keep this object inside the walkable room.'};
   if(layout.obstacles.some(obstacle=>obstacleContains(x,z,footprint,obstacle)))return{position,valid:false,reason:'That position is reserved for room furniture.'};
-  const overlap=roomObjects.find(candidate=>candidate.id!==object.id&&Math.hypot(candidate.position[0]-x,candidate.position[2]-z)<footprintFor(candidate.archetype)+footprint+.35);
+  const overlap=roomObjects.find(candidate=>candidate.id!==object.id&&Math.hypot(candidate.position[0]-x,candidate.position[2]-z)<footprintFor(candidate.archetype)+footprint+OBJECT_CLEARANCE);
   if(overlap)return{position,valid:false,reason:`That placement overlaps ${overlap.name}.`};
   return{position,valid:true};
 }

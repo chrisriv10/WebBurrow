@@ -4,5 +4,5 @@ export function localAsset(path:string) {
 }
 
 export function threeText(value:string) {
-  return value.normalize('NFKD').replace(/[^\x20-\x7E]/g,'?');
+  return value.normalize('NFKD').replace(/[^\x20-\x7E\n\r]/g,'?');
 }

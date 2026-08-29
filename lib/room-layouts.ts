@@ -1,6 +1,6 @@
 import type { Archetype, Room, RoomTemplate } from './types';
 
-export const CURRENT_LAYOUT_VERSION = 15;
+export const CURRENT_LAYOUT_VERSION = 17;
 
 export type LayoutBounds={minX:number;maxX:number;minZ:number;maxZ:number};
 export type LayoutObstacle={id:string;x:number;z:number;width:number;depth:number;rotation?:number};
@@ -45,7 +45,7 @@ export const ROOM_LAYOUTS:Record<RoomTemplate,RoomLayoutDefinition>={
       {id:'den-shelf',kind:'shelf',position:[4.25,1.27,-6.15],rotation:0,accepts:shelfTypes},
       {id:'den-wall',kind:'wall',position:[2.35,1.45,-6.86],rotation:0,accepts:wallTypes},
       {id:'den-media',kind:'wall',position:[-5.94,1.45,3.45],rotation:Math.PI/2,accepts:wallTypes},
-      {id:'den-search',kind:'floor',position:[-2.5,0,-.2],rotation:0,accepts:['pedestal','compact-portal']},
+      {id:'den-search',kind:'floor',position:[-2.5,0,-2.2],rotation:0,accepts:['pedestal','compact-portal']},
       {id:'den-storage',kind:'floor',position:[2,0,-2.2],rotation:0,accepts:['file-box','arcade']},
     ],
     windows:[{id:'den-window',position:[5.9,3.1,-2.2],rotation:-Math.PI/2,width:3.35,height:2.45,depth:2.2}],
@@ -85,13 +85,13 @@ export const ROOM_LAYOUTS:Record<RoomTemplate,RoomLayoutDefinition>={
       {id:'studio-left-desk',kind:'desk',position:[-6.05,1.15,-2.4],rotation:Math.PI/2,accepts:deskTypes},
       {id:'studio-right-desk',kind:'desk',position:[6.05,1.15,-2.4],rotation:-Math.PI/2,accepts:deskTypes},
       {id:'studio-display',kind:'wall',position:[2.7,1.55,-8.15],rotation:0,accepts:wallTypes},
-      {id:'studio-shelf',kind:'shelf',position:[-3.8,1.27,6.7],rotation:0,accepts:shelfTypes},
+      {id:'studio-shelf',kind:'shelf',position:[-3.8,1.27,6.7],rotation:Math.PI,accepts:shelfTypes},
     ],
     windows:[{id:'studio-window',position:[8.28,3.35,-1.35],rotation:-Math.PI/2,width:5.2,height:3.05,depth:2.8}],
     furniture:[
       {id:'studio-desk-left',kind:'desk',position:[-6.05,0,-2.3],rotation:Math.PI/2,variant:'technical'},
       {id:'studio-desk-right',kind:'desk',position:[6.05,0,-2.3],rotation:-Math.PI/2,variant:'technical'},
-      {id:'studio-shelf',kind:'shelf',position:[-3.8,0,6.7],rotation:0,variant:'technical'},
+      {id:'studio-shelf',kind:'shelf',position:[-3.8,0,6.7],rotation:Math.PI,variant:'technical'},
       {id:'studio-utility',kind:'utility',position:[5.65,0,6.1],rotation:Math.PI,variant:'modular'},
       {id:'studio-plant',kind:'plant',position:[7.1,0,4.35]},
       {id:'studio-activity',kind:'activity-rack',position:[-4,2.95,-8.25]},
@@ -109,7 +109,7 @@ export const ROOM_LAYOUTS:Record<RoomTemplate,RoomLayoutDefinition>={
     ],
     miniFurniture:[
       {x:-6.05,z:-2.3,width:2.25,depth:4.55,kind:'desk',rotation:Math.PI/2},{x:6.05,z:-2.3,width:2.25,depth:4.55,kind:'desk',rotation:-Math.PI/2},
-      {x:-3.8,z:6.7,width:3,depth:.85,kind:'shelf'},{x:5.65,z:6.1,width:1.8,depth:1.1,kind:'utility'},
+      {x:-3.8,z:6.7,width:3,depth:.85,kind:'shelf',rotation:Math.PI},{x:5.65,z:6.1,width:1.8,depth:1.1,kind:'utility'},
     ],
   },
   lounge:{
@@ -126,7 +126,7 @@ export const ROOM_LAYOUTS:Record<RoomTemplate,RoomLayoutDefinition>={
       {id:'lounge-tv',kind:'media',position:[4.6,.78,-6.05],rotation:0,accepts:['tv']},
       {id:'lounge-media',kind:'media',position:[4.6,.78,-6.05],rotation:0,accepts:['tv','wall-display','radio','arcade']},
       {id:'lounge-table',kind:'desk',position:[.15,.59,-.25],rotation:0,accepts:['tablet','book','laptop','radio']},
-      {id:'lounge-wall-left',kind:'wall',position:[7.03,1.5,5.63],rotation:-Math.PI*3/4,accepts:wallTypes},
+      {id:'lounge-wall-left',kind:'wall',position:[-7.03,1.5,5.63],rotation:-Math.PI/4,accepts:wallTypes},
       {id:'lounge-shelf',kind:'shelf',position:[6.85,1.29,-2.65],rotation:-Math.PI/2,accepts:shelfTypes},
     ],
     windows:[{id:'lounge-window',position:[-8.34,3.25,-.65],rotation:Math.PI/2,width:5.65,height:3.15,depth:3}],

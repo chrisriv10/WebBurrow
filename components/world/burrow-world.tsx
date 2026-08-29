@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
-import { OrbitControls, PointerLockControls } from '@react-three/drei';
+import { PointerLockControls } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
-import { ACESFilmicToneMapping, Quaternion, Raycaster, SRGBColorSpace, Vector2 } from 'three';
+import { ACESFilmicToneMapping, MathUtils, Raycaster, SRGBColorSpace, Spherical, Vector2, Vector3 } from 'three';
 import { useBurrow } from '@/store/use-burrow';
 import { playerTelemetry } from '@/world/telemetry';
 import { PlayerController } from './player-controller';
@@ -17,16 +17,15 @@ import { integrationAdapters } from '@/lib/integrations/registry';
 import { ROOM_LAYOUTS, wallSegments } from '@/lib/room-layouts';
 import { recordWorldFrame } from '@/lib/performance';
 
-function EditCameraRig({active,onReady}:{active:boolean;onReady:(ready:boolean)=>void}) {
-  const {camera}=useThree();const wasActive=useRef(false);const savedQuaternion=useRef(new Quaternion());
+function EditCameraRig({active}:{active:boolean}) {
+  const {camera}=useThree();const wasActive=useRef(false);const savedQuaternion=useRef(camera.quaternion.clone());
   useLayoutEffect(()=>{
     if(active&&!wasActive.current){
       savedQuaternion.current.copy(camera.quaternion);
       camera.position.set(10.5,10.5,12);
-      camera.lookAt(0,0,-1.2);
+      camera.lookAt(0,1.1,-1.2);
       camera.updateMatrixWorld();
       wasActive.current=true;
-      onReady(true);
     }
     if(!active&&wasActive.current){
       const [x,y,z]=playerTelemetry.position;
@@ -34,9 +33,68 @@ function EditCameraRig({active,onReady}:{active:boolean;onReady:(ready:boolean)=
       camera.quaternion.copy(savedQuaternion.current);
       camera.updateMatrixWorld();
       wasActive.current=false;
-      onReady(false);
     }
-  },[active,camera,onReady]);
+  },[active,camera]);
+  return null;
+}
+
+function EditCameraControls({active}:{active:boolean}) {
+  const {camera:threeCamera,gl}=useThree();
+  const camera=useRef(threeCamera);
+  const keys=useRef(new Set<string>());
+  const target=useRef(new Vector3(0,1.1,-1.2));
+  const dragging=useRef(false);
+  const lastPointer=useRef({x:0,y:0});
+  const offset=useRef(new Vector3());
+  const spherical=useRef(new Spherical());
+  const direction=useRef(new Vector3());
+  const right=useRef(new Vector3());
+  const move=useRef(new Vector3());
+  const up=useRef(new Vector3(0,1,0));
+  useEffect(()=>{
+    const element=gl.domElement;
+    if(!active){keys.current.clear();dragging.current=false;return;}
+    const keyState=keys.current;
+    target.current.set(0,1.1,-1.2);
+    const onPointerDown=(event:PointerEvent)=>{
+      if(event.button!==0&&event.button!==1&&event.button!==2)return;
+      dragging.current=true;lastPointer.current={x:event.clientX,y:event.clientY};element.setPointerCapture?.(event.pointerId);event.preventDefault();
+    };
+    const onPointerMove=(event:PointerEvent)=>{
+      if(!dragging.current)return;
+      const dx=event.clientX-lastPointer.current.x,dy=event.clientY-lastPointer.current.y;lastPointer.current={x:event.clientX,y:event.clientY};
+      offset.current.copy(camera.current.position).sub(target.current);spherical.current.setFromVector3(offset.current);
+      spherical.current.theta-=dx*.006;spherical.current.phi=MathUtils.clamp(spherical.current.phi+dy*.006,.28,1.48);
+      offset.current.setFromSpherical(spherical.current);camera.current.position.copy(target.current).add(offset.current);camera.current.lookAt(target.current);camera.current.updateMatrixWorld();event.preventDefault();
+    };
+    const stopDragging=(event:PointerEvent)=>{dragging.current=false;if(element.hasPointerCapture?.(event.pointerId))element.releasePointerCapture?.(event.pointerId);};
+    const onWheel=(event:WheelEvent)=>{
+      event.preventDefault();offset.current.copy(camera.current.position).sub(target.current);const distance=MathUtils.clamp(offset.current.length()*(1+event.deltaY*.001),4,24);offset.current.setLength(distance);camera.current.position.copy(target.current).add(offset.current);camera.current.lookAt(target.current);camera.current.updateMatrixWorld();
+    };
+    const onKeyDown=(event:KeyboardEvent)=>{
+      if(event.target instanceof HTMLElement&&event.target.matches('input,textarea,select,[contenteditable=true]'))return;
+      if(['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE'].includes(event.code)){keys.current.add(event.code);event.preventDefault();}
+    };
+    const onKeyUp=(event:KeyboardEvent)=>{keys.current.delete(event.code);};
+    const onBlur=()=>{keys.current.clear();dragging.current=false;};
+    element.addEventListener('pointerdown',onPointerDown);element.addEventListener('pointermove',onPointerMove);element.addEventListener('pointerup',stopDragging);element.addEventListener('pointercancel',stopDragging);element.addEventListener('wheel',onWheel,{passive:false});
+    window.addEventListener('keydown',onKeyDown);window.addEventListener('keyup',onKeyUp);window.addEventListener('blur',onBlur);
+    return()=>{element.removeEventListener('pointerdown',onPointerDown);element.removeEventListener('pointermove',onPointerMove);element.removeEventListener('pointerup',stopDragging);element.removeEventListener('pointercancel',stopDragging);element.removeEventListener('wheel',onWheel);window.removeEventListener('keydown',onKeyDown);window.removeEventListener('keyup',onKeyUp);window.removeEventListener('blur',onBlur);keyState.clear();dragging.current=false;};
+  },[active,threeCamera,gl]);
+  useFrame((_state,delta)=>{
+    if(!active)return;
+    const activeCamera=camera.current;
+    const pressed=keys.current;if(!pressed.size)return;
+    const speed=5*delta;activeCamera.getWorldDirection(direction.current);direction.current.y=0;if(direction.current.lengthSq()>.0001)direction.current.normalize();
+    right.current.crossVectors(direction.current,up.current).normalize();move.current.set(0,0,0);
+    if(pressed.has('KeyW'))move.current.addScaledVector(direction.current,speed);
+    if(pressed.has('KeyS'))move.current.addScaledVector(direction.current,-speed);
+    if(pressed.has('KeyD'))move.current.addScaledVector(right.current,speed);
+    if(pressed.has('KeyA'))move.current.addScaledVector(right.current,-speed);
+    if(pressed.has('KeyE'))move.current.y+=speed;
+    if(pressed.has('KeyQ'))move.current.y-=speed;
+    activeCamera.position.add(move.current);activeCamera.position.y=MathUtils.clamp(activeCamera.position.y,1.1,5.4);target.current.add(move.current);target.current.y=MathUtils.clamp(target.current.y,1.1,5.4);activeCamera.lookAt(target.current);activeCamera.updateMatrixWorld();
+  });
   return null;
 }
 
@@ -48,7 +106,7 @@ function PerformanceProbe({physicsBodies}:{physicsBodies:number}){
 
 function Scene({onLockChange}:{onLockChange:(locked:boolean)=>void}) {
   const rooms=useBurrow(s=>s.rooms);const currentRoomId=useBurrow(s=>s.currentRoomId);const objects=useBurrow(s=>s.objects);const integrationCache=useBurrow(s=>s.integrationCache);const integrationObjects=useBurrow(s=>s.integrationObjects);const editMode=useBurrow(s=>s.editMode);const editCameraMode=useBurrow(s=>s.editCameraMode);const selectedId=useBurrow(s=>s.selectedId);const nearObjectId=useBurrow(s=>s.nearObjectId);const editPreview=useBurrow(s=>s.editPreview);const setSelected=useBurrow(s=>s.setSelected);const beginObjectEdit=useBurrow(s=>s.beginObjectEdit);const previewObjectPlacement=useBurrow(s=>s.previewObjectPlacement);const commitObjectPlacement=useBurrow(s=>s.commitObjectPlacement);const setNearObject=useBurrow(s=>s.setNearObject);const openSite=useBurrow(s=>s.openSite);const returnToSpawn=useBurrow(s=>s.returnToSpawn);const setCurrentRoom=useBurrow(s=>s.setCurrentRoom);const setTrayOpen=useBurrow(s=>s.setTrayOpen);const setLauncher=useBurrow(s=>s.setLauncher);const openModal=useBurrow(s=>s.openModal);const setLiveDetail=useBurrow(s=>s.setLiveDetail);const [dragging,setDragging]=useState<string|null>(null);
-  const {camera,scene}=useThree();const raycaster=useMemo(()=>{const next=new Raycaster();next.far=4.25;return next;},[]);const center=useMemo(()=>new Vector2(0,0),[]);const [locked,setLocked]=useState(false);const [editControlsReady,setEditControlsReady]=useState(false);const handleEditReady=useCallback((ready:boolean)=>setEditControlsReady(ready),[]);const editTarget=useMemo(()=>[0,1,-1.2] as [number,number,number],[]);
+  const {camera,scene}=useThree();const raycaster=useMemo(()=>{const next=new Raycaster();next.far=4.25;return next;},[]);const center=useMemo(()=>new Vector2(0,0),[]);const [locked,setLocked]=useState(false);
   const room=rooms.find(item=>item.id===currentRoomId)||rooms[0];
   const layout=room?ROOM_LAYOUTS[room.template]:ROOM_LAYOUTS.den;
   const roomIndex=room?rooms.findIndex(item=>item.id===room.id):0;
@@ -92,8 +150,8 @@ function Scene({onLockChange}:{onLockChange:(locked:boolean)=>void}) {
     {editMode&&<gridHelper args={[Math.max(layout.bounds.maxX-layout.bounds.minX,layout.bounds.maxZ-layout.bounds.minZ),32,'#5f8798','#273442']} position={[0,.035,(layout.bounds.minZ+layout.bounds.maxZ)/2]}/>}
     {compactSession&&workspace?<SessionObjectField objects={roomObjects} workspace={workspace} selectedId={selectedId} nearObjectId={nearObjectId}/>:roomObjects.map(object=>{const preview=editPreview?.id===object.id?editPreview:null;return <WebsiteObject key={object.id} object={preview?{...object,position:preview.position}:object} selected={object.id===selectedId} near={object.id===nearObjectId} placementValid={preview?.valid} onBeginDrag={id=>{beginObjectEdit(id);setDragging(id);}}/>;})}
     {!editMode&&liveWidgets.map((widget,index)=>{const pinned=integrationObjects.find(item=>item.roomId===room.id&&(item.reference===widget.reference||item.kind===widget.kind));const anchor=layout.integrations.find(item=>item.kind===widget.kind);const sameKindOffset=liveWidgets.slice(0,index).filter(item=>item.kind===widget.kind).length*.7;const position=pinned?.position??(anchor?[anchor.position[0]+Math.cos(anchor.rotation)*sameKindOffset,anchor.position[1],anchor.position[2]-Math.sin(anchor.rotation)*sameKindOffset] as [number,number,number]:[index*2-3,0,0]);return <LiveWidget key={widget.id} widget={widget} position={position} rotation={pinned?.rotation??anchor?.rotation??0} near={nearObjectId===`__live:${widget.id}`}/>;})}
-    <PlayerController room={room} enabled={!editMode&&locked}/><EditCameraRig active={editMode} onReady={handleEditReady}/><PerformanceProbe physicsBodies={layout.obstacles.length+wallSegments(layout).length+2}/>
-    {editMode?(editControlsReady?<OrbitControls makeDefault target={editTarget} enabled={editCameraMode} maxPolarAngle={Math.PI/2.08} minPolarAngle={.35} minDistance={6} maxDistance={21} enableDamping dampingFactor={.08} enablePan screenSpacePanning rotateSpeed={.8} zoomSpeed={.8} panSpeed={.8}/>:null):<PointerLockControls makeDefault selector="#world-surface" onLock={()=>{setLocked(true);onLockChange(true);}} onUnlock={()=>{setLocked(false);onLockChange(false);}}/>}
+    <PlayerController room={room} enabled={!editMode&&locked}/><EditCameraRig active={editMode}/><PerformanceProbe physicsBodies={layout.obstacles.length+wallSegments(layout).length+2}/>
+    {editMode?(editCameraMode?<EditCameraControls active/>:null):<PointerLockControls makeDefault selector="#world-surface" onLock={()=>{setLocked(true);onLockChange(true);}} onUnlock={()=>{setLocked(false);onLockChange(false);}}/>}
   </>;
 }
 

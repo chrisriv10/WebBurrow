@@ -1,6 +1,6 @@
 import type { Activity, BookmarkObject, Preferences, Room } from './types';
 
-export type SearchKind='site'|'room'|'collection'|'action'|'integration'|'event'|'feed'|'notification'|'web';
+export type SearchKind='site'|'room'|'collection'|'session'|'action'|'integration'|'event'|'feed'|'notification'|'web';
 export type SearchEntry={id:string;kind:SearchKind;title:string;subtitle:string;keywords:string;priority:number;action?:string;url?:string};
 export function buildSearchIndex(objects:BookmarkObject[],rooms:Room[],actions:{id:string;title:string;keywords:string}[],extras:SearchEntry[]=[],activity:Activity[]=[]):SearchEntry[]{
   const recentPriority=new Map(activity.slice(0,20).map((item,index)=>[item.objectId,Math.max(1,7-index*.35)]));

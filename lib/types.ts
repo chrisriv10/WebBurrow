@@ -114,4 +114,4 @@ export type ConfigEnvelopeV1 = z.infer<typeof configEnvelopeV1Schema>;
 export type ConfigEnvelopeV2 = z.infer<typeof configEnvelopeV2Schema>;
 export type ConfigEnvelopeV3 = z.infer<typeof configEnvelopeV3Schema>;
 export type ConfigEnvelope = ConfigEnvelopeV1|ConfigEnvelopeV2|ConfigEnvelopeV3;
-export type ModalName = 'add-site'|'edit-site'|'create-room'|'customize-room'|'browser-workspace'|'import-bookmarks'|'data'|'help'|'integrations'|'live-detail'|null;
+export type ModalName = 'add-site'|'edit-site'|'create-room'|'customize-room'|'browser-workspace'|'import-bookmarks'|'data'|'help'|'integrations'|'live-detail'|'navigator'|null;

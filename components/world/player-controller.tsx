@@ -45,6 +45,7 @@ export function PlayerController({room,enabled}:{room:Room;enabled:boolean}) {
   useFrame((_,delta)=>{
     const rigid=body.current;
     if(!rigid)return;
+    if(!enabled){velocity.current.set(0,0,0);return;}
     if(lastTeleport.current!==teleportNonce){
       lastTeleport.current=teleportNonce;
       rigid.setNextKinematicTranslation({x:teleportTarget[0],y:teleportTarget[1],z:teleportTarget[2]});
@@ -55,16 +56,14 @@ export function PlayerController({room,enabled}:{room:Room;enabled:boolean}) {
     const forward=new Vector3();camera.getWorldDirection(forward);forward.y=0;forward.normalize();
     const right=new Vector3().crossVectors(forward,camera.up).normalize();
     const desired=new Vector3();
-    if(enabled){
-      if(keys.current.has('KeyW'))desired.add(forward);
-      if(keys.current.has('KeyS'))desired.sub(forward);
-      if(keys.current.has('KeyD'))desired.add(right);
-      if(keys.current.has('KeyA'))desired.sub(right);
-    }
+    if(keys.current.has('KeyW'))desired.add(forward);
+    if(keys.current.has('KeyS'))desired.sub(forward);
+    if(keys.current.has('KeyD'))desired.add(right);
+    if(keys.current.has('KeyA'))desired.sub(right);
     const sprinting=keys.current.has('ShiftLeft')||keys.current.has('ShiftRight');
-    if(desired.lengthSq())desired.normalize().multiplyScalar(sprinting?5.35:3.8);
+    if(desired.lengthSq())desired.normalize().multiplyScalar(sprinting?5.9:4.25);
     velocity.current.lerp(desired,1-Math.exp(-delta*(desired.lengthSq()?10.5:13.5)));
-    if(enabled&&grounded.current&&keys.current.has('Space')){
+    if(grounded.current&&keys.current.has('Space')){
       verticalVelocity.current=5.35;grounded.current=false;keys.current.delete('Space');
     }
     verticalVelocity.current-=15.5*delta;
@@ -82,7 +81,7 @@ export function PlayerController({room,enabled}:{room:Room;enabled:boolean}) {
 
     const speed=velocity.current.length();
     if(grounded.current&&speed>.2)walkTime.current+=delta*(sprinting?10.5:8.2);
-    const bob=grounded.current?Math.sin(walkTime.current)*Math.min(speed/3.8,1)*.014:0;
+    const bob=grounded.current?Math.sin(walkTime.current)*Math.min(speed/4.25,1)*.014:0;
     camera.position.set(next.x,next.y+.8+bob,next.z);
     playerTelemetry.position=[next.x,next.y,next.z];
   });

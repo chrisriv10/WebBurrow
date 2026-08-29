@@ -51,6 +51,8 @@ declare global {
       requestIntegration:(request:IntegrationRequest)=>Promise<IntegrationResponse>;
       requestSiteIcon:(request:{pageUrl:string;iconUrl:string})=>Promise<{ok:boolean;dataUrl?:string;error?:string}>;
       setTrayPreferences:(preferences:{enabled:boolean;minimizeToTray:boolean})=>void;
+      closeTrayWindow:()=>void;
+      showMainWindow:(command?:'show'|'quick-access'|'add'|'import'|'edit'|'customize')=>void;
       syncTrayMenu:(snapshot:{favorites:{id:string;name:string;url:string}[];recent:{id:string;name:string;url:string}[]})=>void;
       syncBrowserContext:(context:{workspaces:{id:string;name:string;tabCount:number;sourceScope:'selection'|'window'|'group'}[];rooms:{id:string;name:string}[];collections:{id:string;name:string}[]})=>void;
       onCommand:(callback:(command:{type:string;payload?:unknown})=>void)=>()=>void;
