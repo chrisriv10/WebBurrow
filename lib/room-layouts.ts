@@ -1,6 +1,6 @@
 import type { Archetype, Room, RoomTemplate } from './types';
 
-export const CURRENT_LAYOUT_VERSION = 13;
+export const CURRENT_LAYOUT_VERSION = 15;
 
 export type LayoutBounds={minX:number;maxX:number;minZ:number;maxZ:number};
 export type LayoutObstacle={id:string;x:number;z:number;width:number;depth:number;rotation?:number};
@@ -118,23 +118,23 @@ export const ROOM_LAYOUTS:Record<RoomTemplate,RoomLayoutDefinition>={
     spawn:[0,1.1,5.75],portal:[0,0,-6.92],ceilingHeight:5.85,
     obstacles:[
       {id:'sofa',x:-4.05,z:1.35,width:5.35,depth:2.15,rotation:Math.PI/2},
-      {id:'media-console',x:3.6,z:-6.15,width:4.15,depth:1.05},
+      {id:'media-console',x:4.6,z:-6.15,width:4.15,depth:1.05},
       {id:'coffee-table',x:.15,z:-.25,width:3.1,depth:1.55},
-      {id:'low-seat',x:6.35,z:4.55,width:1.75,depth:1.9,rotation:1.15},
+      {id:'low-seat',x:6.35,z:4.55,width:1.75,depth:1.9,rotation:1.15+Math.PI},
     ],
     anchors:[
-      {id:'lounge-tv',kind:'media',position:[2.25,.78,-6.05],rotation:0,accepts:['tv']},
-      {id:'lounge-media',kind:'media',position:[3.6,.78,-6.05],rotation:0,accepts:['tv','wall-display','radio','arcade']},
+      {id:'lounge-tv',kind:'media',position:[4.6,.78,-6.05],rotation:0,accepts:['tv']},
+      {id:'lounge-media',kind:'media',position:[4.6,.78,-6.05],rotation:0,accepts:['tv','wall-display','radio','arcade']},
       {id:'lounge-table',kind:'desk',position:[.15,.59,-.25],rotation:0,accepts:['tablet','book','laptop','radio']},
-      {id:'lounge-wall-left',kind:'wall',position:[-8.05,1.5,-4.5],rotation:Math.PI/2,accepts:wallTypes},
+      {id:'lounge-wall-left',kind:'wall',position:[7.03,1.5,5.63],rotation:-Math.PI*3/4,accepts:wallTypes},
       {id:'lounge-shelf',kind:'shelf',position:[6.85,1.29,-2.65],rotation:-Math.PI/2,accepts:shelfTypes},
     ],
     windows:[{id:'lounge-window',position:[-8.34,3.25,-.65],rotation:Math.PI/2,width:5.65,height:3.15,depth:3}],
     furniture:[
       {id:'lounge-sofa',kind:'sofa',position:[-4.05,0,1.35],rotation:Math.PI/2,variant:'wide'},
       {id:'lounge-coffee',kind:'coffee-table',position:[.15,0,-.25],rotation:-.05,variant:'low'},
-      {id:'lounge-media',kind:'media-console',position:[3.6,0,-6.15],variant:'wide'},
-      {id:'lounge-chair',kind:'lounge-chair',position:[6.35,0,4.55],rotation:1.15,variant:'low'},
+      {id:'lounge-media',kind:'media-console',position:[4.6,0,-6.15],variant:'wide'},
+      {id:'lounge-chair',kind:'lounge-chair',position:[6.35,0,4.55],rotation:1.15+Math.PI,variant:'low'},
       {id:'lounge-lamp',kind:'lamp',position:[7.25,0,3.55]},
       {id:'lounge-plant',kind:'plant',position:[-6.55,0,4.45]},
       {id:'lounge-shelf',kind:'shelf',position:[6.85,0,-2.65],rotation:-Math.PI/2,variant:'low'},
@@ -148,8 +148,8 @@ export const ROOM_LAYOUTS:Record<RoomTemplate,RoomLayoutDefinition>={
     ],
     sessionZones:[{id:'lounge-open',label:'Open lounge',x:1.3,z:1,width:5.4,depth:7.5}],
     miniFurniture:[
-      {x:-4.05,z:1.35,width:2.15,depth:5.2,kind:'sofa',rotation:Math.PI/2},{x:3.6,z:-6.15,width:4.1,depth:1,kind:'media'},
-      {x:.15,z:-.25,width:3,depth:1.45,kind:'table',rotation:-.05},{x:6.35,z:4.55,width:1.7,depth:1.85,kind:'seat',rotation:1.15},
+      {x:-4.05,z:1.35,width:2.15,depth:5.2,kind:'sofa',rotation:Math.PI/2},{x:4.6,z:-6.15,width:4.1,depth:1,kind:'media'},
+      {x:.15,z:-.25,width:3,depth:1.45,kind:'table',rotation:-.05},{x:6.35,z:4.55,width:1.7,depth:1.85,kind:'seat',rotation:1.15+Math.PI},
     ],
   },
 };

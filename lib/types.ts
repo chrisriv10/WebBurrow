@@ -65,7 +65,7 @@ export const siteIconSchema=z.object({id:z.string(),siteUrl:z.string().url(),mim
 export const preferencesSchema = z.object({
   lastRoomId:z.string(), trayOpen:z.boolean(), trayPinned:z.boolean(), reducedEffects:z.boolean(), hasEntered:z.boolean(),
   recentSearches:z.array(z.string().max(80)).max(6).default([]), searchProvider:z.enum(['duckduckgo','google','bing']).default('duckduckgo'),
-  trayModules:z.array(trayModuleSchema).max(4).default(['favorites','recent','note']), systemTrayEnabled:z.boolean().default(false),
+  trayModules:z.array(trayModuleSchema).max(4).default(['favorites','recent','note']), systemTrayEnabled:z.boolean().default(true),
   minimizeToTray:z.boolean().default(false), temperatureUnit:z.enum(['celsius','fahrenheit']).default('fahrenheit'), windowEffects:z.boolean().default(true),
   soundEnabled:z.boolean().default(false), soundVolume:z.number().min(0).max(1).default(.35), ambienceEnabled:z.boolean().default(true),
   onboardingMilestones:z.array(z.enum(['enter','move','interact','quick-access','tray','portal','edit','add-site','companion'])).default([]),

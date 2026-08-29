@@ -47,7 +47,6 @@ function Sofa({room,variant}:{room:Room;variant?:LayoutFurniture['variant']}){
     <instancedMesh ref={seats} args={[undefined,undefined,count]}><RoundedBoxGeometry args={[1,1,1]} radius={.12}/><meshStandardMaterial color="#ffffff" roughness={1}/></instancedMesh>
     <instancedMesh ref={backs} args={[undefined,undefined,count]}><RoundedBoxGeometry args={[1,1,1]} radius={.11}/><meshStandardMaterial color="#ffffff" roughness={1}/></instancedMesh>
     <instancedMesh ref={feet} args={[undefined,undefined,2]}><cylinderGeometry args={[.5,.6,1,12]}/><meshStandardMaterial color="#171d28" roughness={.86}/></instancedMesh>
-    <RoundedBox args={[.68,.34,.2]} radius={.1} position={[width*.28,1.13,-.31]} rotation={[0,0,-.1]}><meshStandardMaterial color="#514b63" roughness={1}/></RoundedBox>
   </group>;
 }
 

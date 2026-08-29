@@ -10,5 +10,6 @@ const MARKS:Partial<Record<SiteIdentity['brand'],string>>={
 export function BrandLogo({identity,size,position=[0,0,0]}:{identity:SiteIdentity;size:number;position?:[number,number,number]}){
   const mark=MARKS[identity.brand];
   if(!mark)return <Text font={FONT} position={position} fontSize={size*.42} color="#f2f5fb" anchorX="center" anchorY="middle">{threeText(identity.monogram)}</Text>;
-  return <Svg src={mark} position={position} scale={size/100} />;
+  const xOffset=identity.brand==='github'?size*.035:0;
+  return <Svg src={mark} position={[position[0]+xOffset,position[1],position[2]]} scale={size/100} />;
 }

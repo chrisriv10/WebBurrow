@@ -15,7 +15,7 @@ const FONT=localAsset('fonts/space-grotesk-latin-500-normal.woff');
 const MONO=localAsset('fonts/ibm-plex-mono-latin-500-normal.woff');
 
 export function WebsiteObject({object,selected,near,placementValid,onBeginDrag}:{object:BookmarkObject;selected:boolean;near:boolean;placementValid?:boolean;onBeginDrag:(id:string)=>void}){
-  const editMode=useBurrow(state=>state.editMode);const setSelected=useBurrow(state=>state.setSelected);const openPulse=useBurrow(state=>state.openPulse);const reduced=useBurrow(state=>state.preferences.reducedEffects);const arrivalIndex=useBurrow(state=>state.arrivalIds.indexOf(object.id));
+  const editMode=useBurrow(state=>state.editMode);const editCameraMode=useBurrow(state=>state.editCameraMode);const setSelected=useBurrow(state=>state.setSelected);const openPulse=useBurrow(state=>state.openPulse);const reduced=useBurrow(state=>state.preferences.reducedEffects);const arrivalIndex=useBurrow(state=>state.arrivalIds.indexOf(object.id));
   const motion=useRef<Group>(null);const [hovered,setHovered]=useState(false);const pulse=useRef(0);const born=useRef<number|null>(null);const identity=siteIdentity(object);
   useEffect(()=>{if(openPulse?.id===object.id)pulse.current=1;},[object.id,openPulse]);
   useFrame(({clock},delta)=>{
@@ -29,7 +29,7 @@ export function WebsiteObject({object,selected,near,placementValid,onBeginDrag}:
     const scale=MathUtils.damp(motion.current.scale.x,target,arrived?9:12,delta);motion.current.scale.setScalar(scale);
   });
   const active=near||hovered||openPulse?.id===object.id;
-  const activate=(event:ThreeEvent<PointerEvent>)=>{event.stopPropagation();if(editMode){setSelected(object.id);onBeginDrag(object.id);}};
+  const activate=(event:ThreeEvent<PointerEvent>)=>{event.stopPropagation();if(editMode&&!editCameraMode){setSelected(object.id);onBeginDrag(object.id);}};
   return <group position={object.position} rotation={[0,object.rotation,0]} userData={{interactionId:object.id}} onPointerDown={activate} onPointerOver={event=>{event.stopPropagation();setHovered(true);}} onPointerOut={()=>setHovered(false)}>
     <group ref={motion}><DigitalObject object={object} selected={selected} active={active}/></group>
     {(selected||near||hovered)&&<group position={[0,object.mount?.kind==='shelf'?1.45:2.78,object.mount?.kind==='shelf'?.48:.1]}>

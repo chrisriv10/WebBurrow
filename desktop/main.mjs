@@ -60,7 +60,7 @@ function sanitizedMenuItems(items) {
 
 function rebuildTray() {
   if (!trayPreferences.enabled) { nativeTray?.destroy(); nativeTray = undefined; return; }
-  if (!nativeTray) { nativeTray = new Tray(nativeImage.createFromPath(path.join(appDirectory, 'icon.png'))); nativeTray.setToolTip('WebBurrow'); nativeTray.on('double-click', () => showWindow({ type:'show' })); }
+  if (!nativeTray) { nativeTray = new Tray(nativeImage.createFromPath(path.join(appDirectory, 'icon.png'))); nativeTray.setToolTip('WebBurrow · Burrow Tray'); nativeTray.on('click', () => showWindow({ type:'toggle-tray' })); nativeTray.on('double-click', () => showWindow({ type:'show' })); }
   const linkMenu = (items) => items.length ? items.map(item => ({ label:item.name, click:() => void shell.openExternal(item.url) })) : [{ label:'Nothing here yet', enabled:false }];
   nativeTray.setContextMenu(Menu.buildFromTemplate([
     { label:'Open WebBurrow', click:() => showWindow({ type:'show' }) },
