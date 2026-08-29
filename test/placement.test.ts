@@ -55,7 +55,7 @@ describe('room placement',()=>{
     const laptop={...DEMO_OBJECTS.find(object=>object.id==='site-github')!,position:[-5.55,1.08,-2.4] as [number,number,number]};
     const floor={...DEMO_OBJECTS[0],id:'floor-object',roomId:'room-dev',position:[1.37,.4,2.22] as [number,number,number]};
     const migrated=migrateLayoutObjects('studio',[laptop,floor],3);
-    expect(migrated.find(object=>object.id===laptop.id)?.position).toEqual([-5.55,1.15,-2.4]);
+    expect(migrated.find(object=>object.id===laptop.id)?.position).toEqual([-6.05,1.15,-2.4]);
     expect(migrated.find(object=>object.id===floor.id)?.position).toEqual([1.37,0,2.22]);
   });
 
@@ -63,5 +63,11 @@ describe('room placement',()=>{
     const layout=ROOM_LAYOUTS.lounge,media=layout.obstacles.find(obstacle=>obstacle.id==='media-console')!;
     expect(media.x-media.width/2).toBeGreaterThan(1.275);
     expect(layout.anchors.find(anchor=>anchor.id==='lounge-media')?.position[0]).toBe(media.x);
+  });
+
+  it('keeps the Den storage object in the open floor pocket',()=>{
+    const storage=DEMO_OBJECTS.find(object=>object.id==='site-wiki')!;
+    expect(validatePlacement(storage,storage.position,DEMO_OBJECTS.filter(object=>object.id!==storage.id),'den').valid).toBe(true);
+    expect(storage.position[2]).toBeLessThan(-1.5);
   });
 });

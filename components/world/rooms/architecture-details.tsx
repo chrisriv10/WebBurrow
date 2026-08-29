@@ -14,7 +14,7 @@ function DenDetails({room}:{room:Room}){
     </group>
     <group position={[-6.01,2.75,2.55]} rotation={[0,Math.PI/2,0]}><BoxInstances items={[-1.2,-.4,.4,1.2].map((x,i)=>({position:[x,0,0],scale:[.58,2.4,.12],color:i%2?'#252c3a':'#202634'}))}/></group>
     <RoundedBox args={[3.8,.12,.24]} radius={.04} position={[1.8,5.12,5.15]}><meshStandardMaterial color="#393444" emissive={room.accent} emissiveIntensity={.025} roughness={.88}/></RoundedBox>
-    <mesh position={[-1.1,.045,2.1]} rotation={[-Math.PI/2,0,.1]} receiveShadow><circleGeometry args={[2.75,48]}/><meshStandardMaterial color="#302b40" roughness={1}/></mesh>
+    <mesh position={[.35,.045,1.1]} rotation={[-Math.PI/2,0,.04]} receiveShadow><circleGeometry args={[2.5,48]}/><meshStandardMaterial color="#302b40" roughness={1}/></mesh>
   </>;
 }
 
@@ -31,7 +31,7 @@ function LoungeDetails({room}:{room:Room}){
   return <>
     <group position={[0,3,-7.27]}><BoxInstances items={[-5.2,-3.9,3.9,5.2].map((x,i)=>({position:[x,0,0],scale:[1.02,3.25,.16],rotation:[0,0,i%2?.025:-.025],color:i%2?'#272436':'#312a3b'}))} roughness={1}/></group>
     <group position={[0,5.28,-.4]}><BoxInstances items={[-4.6,0,4.6].map(x=>({position:[x,0,0],scale:[2.55,.12,8.4],color:'#242132'}))}/></group>
-    <group position={[6.95,2.2,-.9]} rotation={[0,-Math.PI/2,0]}><BoxInstances items={[-1.25,-.42,.42,1.25].map((x,i)=>({position:[x,0,0],scale:[.65,2.25,.12],color:i%2?'#343044':'#29283a'}))} roughness={1}/></group>
+    <group position={[8.28,2.2,2.1]} rotation={[0,-Math.PI/2,0]}><BoxInstances items={[-1.2,-.4,.4,1.2].map((x,i)=>({position:[x,0,0],scale:[.65,2.25,.12],color:i%2?'#343044':'#29283a'}))} roughness={1}/></group>
     <mesh position={[.25,.05,1.05]} rotation={[-Math.PI/2,0,0]} receiveShadow><circleGeometry args={[4.15,56]}/><meshStandardMaterial color="#352b43" roughness={1}/></mesh>
     <RoundedBox args={[6.4,.11,.28]} radius={.05} position={[0,4.92,-7.13]}><meshStandardMaterial color="#3b3348" emissive={room.accent} emissiveIntensity={.03} roughness={.9}/></RoundedBox>
   </>;

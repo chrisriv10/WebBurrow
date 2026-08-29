@@ -3,7 +3,7 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Instance, Instances, RoundedBox, RoundedBoxGeometry, Text } from '@react-three/drei';
-import { Color, DoubleSide, Object3D, Shape, type Group, type InstancedMesh } from 'three';
+import { Color, DoubleSide, Object3D, type Group, type InstancedMesh } from 'three';
 import type { LayoutFurniture, RoomLayoutDefinition } from '@/lib/room-layouts';
 import type { Room } from '@/lib/types';
 import { useBurrow } from '@/store/use-burrow';
@@ -37,17 +37,17 @@ function Desk({room,variant}:{room:Room;variant?:LayoutFurniture['variant']}){
 }
 
 function Sofa({room,variant}:{room:Room;variant?:LayoutFurniture['variant']}){
-  const width=variant==='wide'?5.15:3.75,count=variant==='wide'?4:3,gap=(width-.62)/count;
+  const width=variant==='wide'?5.15:3.75,count=variant==='wide'?4:3,innerWidth=width-.96,gap=innerWidth/count;
   const fabric=room.template==='lounge'?'#403a50':SURFACES.fabric.color,arms=useRef<InstancedMesh>(null),seats=useRef<InstancedMesh>(null),backs=useRef<InstancedMesh>(null),feet=useRef<InstancedMesh>(null);
-  useLayoutEffect(()=>{const temp=new Object3D();[-width/2+.22,width/2-.22].forEach((x,index)=>{temp.position.set(x,.72,0);temp.rotation.set(0,0,0);temp.scale.set(.42,.7,1.52);temp.updateMatrix();arms.current?.setMatrixAt(index,temp.matrix);});Array.from({length:count},(_,i)=>-(width-.62)/2+gap/2+i*gap).forEach((x,index)=>{temp.position.set(x,.82,.08);temp.rotation.set(0,0,index%2?.008:-.008);temp.scale.set(gap-.1,.3,1.18);temp.updateMatrix();seats.current?.setMatrixAt(index,temp.matrix);seats.current?.setColorAt(index,new Color(index%2?fabric:'#384055'));temp.position.set(x,1.27,-.44);temp.rotation.set(-.05,0,0);temp.scale.set(gap-.13,.68,.25);temp.updateMatrix();backs.current?.setMatrixAt(index,temp.matrix);backs.current?.setColorAt(index,new Color(index%2?'#3a4054':'#454058'));});[-width*.34,width*.34].forEach((x,index)=>{temp.position.set(x,.12,0);temp.rotation.set(0,0,0);temp.scale.set(.16,.24,.16);temp.updateMatrix();feet.current?.setMatrixAt(index,temp.matrix);});for(const mesh of [arms.current,seats.current,backs.current,feet.current])if(mesh){mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;}},[count,fabric,gap,width]);
+  useLayoutEffect(()=>{const temp=new Object3D();[-width/2+.25,width/2-.25].forEach((x,index)=>{temp.position.set(x,.69,.03);temp.rotation.set(0,0,0);temp.scale.set(.46,.66,1.34);temp.updateMatrix();arms.current?.setMatrixAt(index,temp.matrix);});Array.from({length:count},(_,i)=>-innerWidth/2+gap/2+i*gap).forEach((x,index)=>{temp.position.set(x,.75,.12);temp.rotation.set(0,0,index%2?.008:-.008);temp.scale.set(gap-.1,.28,1.04);temp.updateMatrix();seats.current?.setMatrixAt(index,temp.matrix);seats.current?.setColorAt(index,new Color(index%2?fabric:'#384055'));temp.position.set(x,1.19,-.43);temp.rotation.set(-.05,0,0);temp.scale.set(gap-.12,.62,.24);temp.updateMatrix();backs.current?.setMatrixAt(index,temp.matrix);backs.current?.setColorAt(index,new Color(index%2?'#3a4054':'#454058'));});[-width*.34,width*.34].forEach((x,index)=>{temp.position.set(x,.12,0);temp.rotation.set(0,0,0);temp.scale.set(.16,.24,.16);temp.updateMatrix();feet.current?.setMatrixAt(index,temp.matrix);});for(const mesh of [arms.current,seats.current,backs.current,feet.current])if(mesh){mesh.instanceMatrix.needsUpdate=true;if(mesh.instanceColor)mesh.instanceColor.needsUpdate=true;}},[count,fabric,gap,innerWidth,width]);
   return <group>
-    <RoundedBox args={[width,.38,1.65]} radius={.14} smoothness={4} position={[0,.38,0]} castShadow><meshStandardMaterial color="#252c3b" roughness={.96}/></RoundedBox>
-    <RoundedBox args={[width-.22,.84,.34]} radius={.15} position={[0,1.04,-.67]}><meshStandardMaterial color={fabric} roughness={1}/></RoundedBox>
+    <RoundedBox args={[width,.34,1.5]} radius={.14} smoothness={4} position={[0,.35,0]} castShadow><meshStandardMaterial color="#252c3b" roughness={.96}/></RoundedBox>
+    <RoundedBox args={[width-.7,.4,.3]} radius={.13} position={[0,.82,-.59]}><meshStandardMaterial color={fabric} roughness={1}/></RoundedBox>
     <instancedMesh ref={arms} args={[undefined,undefined,2]}><RoundedBoxGeometry args={[1,1,1]} radius={.16}/><meshStandardMaterial color="#303748" roughness={1}/></instancedMesh>
     <instancedMesh ref={seats} args={[undefined,undefined,count]}><RoundedBoxGeometry args={[1,1,1]} radius={.12}/><meshStandardMaterial color="#ffffff" roughness={1}/></instancedMesh>
     <instancedMesh ref={backs} args={[undefined,undefined,count]}><RoundedBoxGeometry args={[1,1,1]} radius={.11}/><meshStandardMaterial color="#ffffff" roughness={1}/></instancedMesh>
     <instancedMesh ref={feet} args={[undefined,undefined,2]}><cylinderGeometry args={[.5,.6,1,12]}/><meshStandardMaterial color="#171d28" roughness={.86}/></instancedMesh>
-    <RoundedBox args={[.9,.36,.16]} radius={.11} position={[width*.2,1.5,-.47]} rotation={[0,0,-.1]}><meshStandardMaterial color={room.accent} roughness={1}/></RoundedBox>
+    <RoundedBox args={[.72,.44,.18]} radius={.1} position={[width*.18,1.18,-.27]} rotation={[0,0,-.08]}><meshStandardMaterial color={room.accent} roughness={1}/></RoundedBox>
   </group>;
 }
 
@@ -96,23 +96,24 @@ function CoffeeTable({room}:{room:Room}){
 
 function MediaConsole({room}:{room:Room}){
   return <group>
-    <RoundedBox args={[4.65,.72,.9]} radius={.13} position={[0,.42,0]} castShadow><meshStandardMaterial color="#202733" roughness={.9}/></RoundedBox>
-    {[-1.45,0,1.45].map((x,i)=><group key={x} position={[x,.44,.47]}>
-      <RoundedBox args={[1.3,.47,.04]} radius={.035}><meshStandardMaterial color={i===1?'#17212b':'#2f3542'} roughness={.9}/></RoundedBox>
-      <mesh position={[0,.03,.025]}><boxGeometry args={[.88,.02,.02]}/><meshBasicMaterial color={i===1?room.accent:'#596171'}/></mesh>
+    <RoundedBox args={[4,.72,.9]} radius={.13} position={[0,.42,0]} castShadow><meshStandardMaterial color="#202733" roughness={.9}/></RoundedBox>
+    {[-1.2,0,1.2].map((x,i)=><group key={x} position={[x,.44,.47]}>
+      <RoundedBox args={[1.05,.47,.04]} radius={.035}><meshStandardMaterial color={i===1?'#17212b':'#2f3542'} roughness={.9}/></RoundedBox>
+      <mesh position={[0,.03,.025]}><boxGeometry args={[.72,.02,.02]}/><meshBasicMaterial color={i===1?room.accent:'#596171'}/></mesh>
     </group>)}
-    {[-1.82,1.82].map(x=><mesh key={x} position={[x,.08,0]}><cylinderGeometry args={[.07,.09,.16,12]}/><meshStandardMaterial {...SURFACES.darkMetal}/></mesh>)}
+    {[-1.55,1.55].map(x=><mesh key={x} position={[x,.08,0]}><cylinderGeometry args={[.07,.09,.16,12]}/><meshStandardMaterial {...SURFACES.darkMetal}/></mesh>)}
   </group>;
 }
 
 function LoungeChair({room}:{room:Room}){
-  const shell=new Shape();shell.moveTo(-.72,-.55);shell.quadraticCurveTo(-.9,.25,-.52,.72);shell.quadraticCurveTo(0,1.05,.52,.72);shell.quadraticCurveTo(.9,.25,.72,-.55);shell.closePath();
   return <group>
-    <mesh position={[0,1.02,-.18]} rotation={[0,0,0]} castShadow><extrudeGeometry args={[shell,{depth:.42,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.08,bevelThickness:.08}]}/><meshStandardMaterial color="#303748" roughness={.96}/></mesh>
-    <RoundedBox args={[1.35,.28,1.25]} radius={.14} position={[0,.56,.15]}><meshStandardMaterial color={SURFACES.fabricAlt.color} roughness={1}/></RoundedBox>
+    <RoundedBox args={[1.55,1.58,.36]} radius={.22} position={[0,1.2,-.42]} rotation={[-.1,0,0]} castShadow><meshStandardMaterial color="#303748" roughness={.96}/></RoundedBox>
+    <RoundedBox args={[1.12,.92,.2]} radius={.16} position={[0,1.25,-.18]} rotation={[-.08,0,0]}><meshStandardMaterial color={SURFACES.fabricAlt.color} roughness={1}/></RoundedBox>
+    <RoundedBox args={[1.3,.3,1.18]} radius={.14} position={[0,.62,.08]}><meshStandardMaterial color={SURFACES.fabricAlt.color} roughness={1}/></RoundedBox>
+    {[-.72,.72].map(x=><RoundedBox key={x} args={[.24,.52,1.04]} radius={.11} position={[x,.78,.08]}><meshStandardMaterial color="#303748" roughness={1}/></RoundedBox>)}
     <mesh position={[0,.23,0]}><cylinderGeometry args={[.1,.15,.5,14]}/><meshStandardMaterial {...SURFACES.darkMetal}/></mesh>
     <mesh position={[0,.08,0]} rotation={[-Math.PI/2,0,0]}><cylinderGeometry args={[.48,.48,.09,20]}/><meshStandardMaterial color="#202633" roughness={.86}/></mesh>
-    <RoundedBox args={[.72,.25,.12]} radius={.09} position={[.26,1.55,.05]} rotation={[0,0,-.08]}><meshStandardMaterial color={room.accent} roughness={1}/></RoundedBox>
+    <RoundedBox args={[.56,.28,.1]} radius={.08} position={[.22,1.48,-.05]} rotation={[0,0,-.08]}><meshStandardMaterial color={room.accent} roughness={1}/></RoundedBox>
   </group>;
 }
 
@@ -141,10 +142,10 @@ function ActivityRack({room}:{room:Room}){
   const objects=useBurrow(state=>state.objects),activity=useBurrow(state=>state.activity),setLauncher=useBurrow(state=>state.setLauncher);
   const favoriteCount=objects.filter(object=>object.favorite).length;
   return <group onClick={()=>setLauncher(true)} userData={{interactionId:'__favorites'}}>
-    <RoundedBox args={[3.05,1.15,.18]} radius={.08}><meshStandardMaterial color="#1d2531" roughness={.9}/></RoundedBox>
-    <Text font={MONO} position={[-1.28,.35,.12]} anchorX="left" fontSize={.06} color={room.accent}>FAVORITES / RECENT</Text>
-    <Text font={FONT} position={[-1.28,.06,.12]} anchorX="left" maxWidth={2.45} fontSize={.12} color="#e7ebf2">{favoriteCount} pinned · {activity[0]?.name??'Ready when you are'}</Text>
-    <Instances limit={4}><RoundedBoxGeometry args={[.42,.2,.08]} radius={.035}/><meshStandardMaterial roughness={.9}/>{[-.95,-.35,.25,.85].map((x,index)=><Instance key={x} position={[x,-.36,.13]} color={['#5f8ba5','#6676a0','#806d91','#557b78'][index]}/>)}</Instances>
+    <RoundedBox args={[2.35,1.15,.18]} radius={.08}><meshStandardMaterial color="#1d2531" roughness={.9}/></RoundedBox>
+    <Text font={MONO} position={[-.95,.35,.12]} anchorX="left" fontSize={.055} color={room.accent}>FAVORITES / RECENT</Text>
+    <Text font={FONT} position={[-.95,.06,.12]} anchorX="left" maxWidth={1.82} fontSize={.105} color="#e7ebf2">{favoriteCount} pinned · {activity[0]?.name??'Ready when you are'}</Text>
+    <Instances limit={4}><RoundedBoxGeometry args={[.34,.2,.08]} radius={.035}/><meshStandardMaterial roughness={.9}/>{[-.72,-.24,.24,.72].map((x,index)=><Instance key={x} position={[x,-.36,.13]} color={['#5f8ba5','#6676a0','#806d91','#557b78'][index]}/>)}</Instances>
   </group>;
 }
 
