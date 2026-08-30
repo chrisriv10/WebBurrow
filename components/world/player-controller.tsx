@@ -45,13 +45,13 @@ export function PlayerController({room,enabled}:{room:Room;enabled:boolean}) {
   useFrame((_,delta)=>{
     const rigid=body.current;
     if(!rigid)return;
-    if(!enabled){velocity.current.set(0,0,0);return;}
     if(lastTeleport.current!==teleportNonce){
       lastTeleport.current=teleportNonce;
       rigid.setNextKinematicTranslation({x:teleportTarget[0],y:teleportTarget[1],z:teleportTarget[2]});
       camera.position.set(teleportTarget[0],teleportTarget[1]+.8,teleportTarget[2]);
       velocity.current.set(0,0,0);verticalVelocity.current=0;return;
     }
+    if(!enabled){velocity.current.set(0,0,0);return;}
 
     const forward=new Vector3();camera.getWorldDirection(forward);forward.y=0;forward.normalize();
     const right=new Vector3().crossVectors(forward,camera.up).normalize();

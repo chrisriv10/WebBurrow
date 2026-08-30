@@ -29,6 +29,7 @@ WebBurrow turns your bookmarks into a cozy, low-poly 3D world. Every site you ca
   - [Browser companion](#browser-companion)
 - [Controls](#controls)
 - [Quick Access](#quick-access)
+- [Navigator](#navigator)
 - [Integrations & privacy](#integrations--privacy)
 - [Architecture](#architecture)
 - [Verify / test](#verify--test)
@@ -49,6 +50,7 @@ Browser bookmark bars are flat, forgettable, and infinite. WebBurrow gives your 
 | 🧱 **13 site archetypes** | Beveled, readable objects with restrained live-state cues and context-aware placement (floor, desk, shelf, media-wall, wall) |
 | ⌨️ **Full keyboard control** | Manage sites and rooms, import bookmarks, build collections, favorite, and place things — no mouse required |
 | 🔎 **Quick Access** | One search bar across local sites, rooms, collections, sessions, integrations, feeds, notifications, and the open web |
+| 🧭 **Navigator** | A visual command center for discovering, grouping, and managing sites, rooms, collections, sessions, integrations, and browser actions |
 | 🌐 **Optional integrations** | GitHub (public), Open-Meteo weather, iCalendar, and text-only RSS/Atom — each with offline cache fallback |
 | 🪟 **Mini Burrow** | A compact 2D view of your layout with up to 4 configurable cards |
 | 🧭 **Browser companion** | Session-only tab workspaces via a minimal-permission Chrome/Edge/Brave extension |
@@ -143,7 +145,13 @@ It can send the active page, selected tabs, a window, or a tab group into a temp
 | `Home` | Return to a safe spawn |
 | `Esc` | Release mouse look / close dialog |
 
+In Edit mode, switch between **Camera mode** and **Place objects**. Drag to orbit, scroll to zoom, and use `W A S D` plus `Q / E` to fly through the room while arranging objects.
+
 No first-person skills required: every workflow is also reachable through accessible HTML controls, and small windows automatically fall back to a companion layout instead of forcing mouse-look gameplay.
+
+<p align="center">
+  <img src="https://github.com/chrisriv10/WebBurrow/raw/main/docs/screenshots/edit-mode.png" alt="WebBurrow edit mode with camera controls" width="800">
+</p>
 
 ## Quick Access
 
@@ -161,6 +169,14 @@ No first-person skills required: every workflow is also reachable through access
 | `gh query` | GitHub |
 
 Plain unmatched text shows an explicit web-search result. It never launches automatically. DuckDuckGo is the default provider.
+
+## Navigator
+
+<p align="center">
+  <img src="https://github.com/chrisriv10/WebBurrow/raw/main/docs/screenshots/navigator.png" alt="WebBurrow Navigator command center" width="1000">
+</p>
+
+Navigator is the expansive companion to Quick Access. Search and fuzzy-filter sites, rooms, collections, temporary browser sessions, integrations, commands, and web-search targets in one visual workspace. Result cards expose local artwork and favicons, while the details pane supports opening or focusing a real browser tab, favorites, editing, collection and room organization, and object-type changes. Drag site cards into rooms or collections, group results by domain or context, and create temporary research workspaces that open their links in your system browser. Navigator is local-first and never embeds or renders third-party websites.
 
 ---
 
@@ -199,7 +215,7 @@ npm run desktop:build
 npm run extension:build
 ```
 
-The desktop smoke harness checks startup, preload availability, renderer console errors, key release views, performance counters, and hidden-window suspension. The suite currently runs **65** fixture-driven, integration, store, persistence, contract, and Testing Library checks. Full release process: [docs/building.md](docs/building.md).
+The desktop smoke harness checks startup, preload availability, renderer console errors, key release views, performance counters, and hidden-window suspension. The suite currently runs **70** fixture-driven, integration, store, persistence, contract, and Testing Library checks. Full release process: [docs/building.md](docs/building.md).
 
 ## Docs
 
