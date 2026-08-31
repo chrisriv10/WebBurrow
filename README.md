@@ -5,7 +5,7 @@
 WebBurrow turns your bookmarks into a cozy, low-poly 3D world. Every site you care about becomes a physical object you can walk up to, sitting on a desk, shelf, or wall in a room you actually enjoy hanging out in. No accounts, no backend, no telemetry, no cloud — everything lives on your machine.
 
 <p align="center">
-  <img src="https://github.com/chrisriv10/WebBurrow/raw/main/docs/screenshots/home-den.png" alt="WebBurrow Home Den" width="800">
+  <img src="https://github.com/chrisriv10/WebBurrow/raw/main/public/webburrow-icon.png" alt="WebBurrow app icon" width="420">
 </p>
 
 <p align="center">
