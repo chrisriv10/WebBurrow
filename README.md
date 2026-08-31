@@ -66,14 +66,21 @@ Browser bookmark bars are flat, forgettable, and infinite. WebBurrow gives your 
 
 <table>
 <tr>
-<td width="50%">
+<td width="33%">
+
+**Home Den**
+<br>
+<img src="https://github.com/chrisriv10/WebBurrow/raw/main/docs/screenshots/home-den.png" alt="Home Den">
+
+</td>
+<td width="33%">
 
 **Developer Studio**
 <br>
 <img src="https://github.com/chrisriv10/WebBurrow/raw/main/docs/screenshots/developer-studio.png" alt="Developer Studio">
 
 </td>
-<td width="50%">
+<td width="33%">
 
 **Media Lounge**
 <br>
