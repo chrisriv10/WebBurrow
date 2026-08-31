@@ -15,7 +15,24 @@ export type PlacementResult={position:[number,number,number];valid:boolean;reaso
 
 export function snapValue(value:number,step=.5){return Math.round(value/step)*step;}
 export function footprintFor(archetype:Archetype){return FOOTPRINTS[archetype];}
-export function suggestedMount(template:RoomTemplate,archetype:Archetype,objects:BookmarkObject[]){const layout=ROOM_LAYOUTS[template];return layout.anchors.find(anchor=>anchor.accepts.includes(archetype)&&!objects.some(object=>object.mount?.surfaceId===anchor.id));}
+function sameAnchorPosition(a:{position:[number,number,number]},b:{position:[number,number,number]}){
+  return Math.hypot(a.position[0]-b.position[0],a.position[2]-b.position[2])<.45&&Math.abs(a.position[1]-b.position[1])<.9;
+}
+
+function anchorIsOccupied(template:RoomTemplate,anchor:{id:string;position:[number,number,number]},objects:BookmarkObject[]){
+  const layout=ROOM_LAYOUTS[template];
+  return objects.some(object=>{
+    if(object.mount?.surfaceId===anchor.id)return true;
+    const mountedAnchor=object.mount&&layout.anchors.find(candidate=>candidate.id===object.mount?.surfaceId&&candidate.kind===object.mount.kind);
+    if(mountedAnchor&&sameAnchorPosition(mountedAnchor,anchor))return true;
+    return !object.mount&&sameAnchorPosition({position:object.position},anchor);
+  });
+}
+
+export function suggestedMount(template:RoomTemplate,archetype:Archetype,objects:BookmarkObject[]){
+  const layout=ROOM_LAYOUTS[template];
+  return layout.anchors.find(anchor=>anchor.accepts.includes(archetype)&&!anchorIsOccupied(template,anchor,objects));
+}
 
 function insideWithPadding(template:RoomTemplate,x:number,z:number,padding:number){
   const outline=ROOM_LAYOUTS[template].outline;

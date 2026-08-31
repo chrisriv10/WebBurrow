@@ -38,6 +38,14 @@ describe('room placement',()=>{
     expect(suggestedMount('studio','poster',[])?.kind).toBe('wall');
   });
 
+  it('keeps secondary lounge media off the TV anchor',()=>{
+    const tv=DEMO_OBJECTS.find(object=>object.id==='site-youtube')!;
+    expect(suggestedMount('lounge','radio',[tv])?.id).toBe('lounge-table');
+
+    const table=DEMO_OBJECTS.find(object=>object.id==='site-spotify')!;
+    expect(suggestedMount('lounge','radio',[tv,table])?.id).toBe('lounge-shelf');
+  });
+
   it('provides 100 stable compact workspace stations inside the Studio layout',()=>{
     const positions=Array.from({length:100},(_,index)=>sessionWorkspacePlacement(index,'studio'));
     expect(new Set(positions.map(position=>position.join(','))).size).toBe(100);

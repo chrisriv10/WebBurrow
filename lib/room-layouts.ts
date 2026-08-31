@@ -124,8 +124,8 @@ export const ROOM_LAYOUTS:Record<RoomTemplate,RoomLayoutDefinition>={
     ],
     anchors:[
       {id:'lounge-tv',kind:'media',position:[4.6,.78,-6.05],rotation:0,accepts:['tv']},
-      {id:'lounge-media',kind:'media',position:[4.6,.78,-6.05],rotation:0,accepts:['tv','wall-display','radio','arcade']},
       {id:'lounge-table',kind:'desk',position:[.15,.59,-.25],rotation:0,accepts:['tablet','book','laptop','radio']},
+      {id:'lounge-media',kind:'media',position:[4.6,.78,-6.05],rotation:0,accepts:['tv','wall-display','radio','arcade']},
       {id:'lounge-wall-left',kind:'wall',position:[-7.03,1.5,5.63],rotation:-Math.PI/4,accepts:wallTypes},
       {id:'lounge-shelf',kind:'shelf',position:[6.85,1.29,-2.65],rotation:-Math.PI/2,accepts:shelfTypes},
     ],
