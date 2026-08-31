@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { PointerLockControls } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
@@ -14,16 +14,17 @@ import { WebsiteObject } from './website-object';
 import { SessionObjectField } from './session-object-field';
 import { LiveWidget } from './live-widget';
 import { integrationAdapters } from '@/lib/integrations/registry';
-import { ROOM_LAYOUTS, wallSegments } from '@/lib/room-layouts';
+import { ROOM_LAYOUTS, pointInsideOutline, wallSegments } from '@/lib/room-layouts';
 import { recordWorldFrame } from '@/lib/performance';
 
-function EditCameraRig({active}:{active:boolean}) {
+function EditCameraRig({active,layout}:{active:boolean;layout:typeof ROOM_LAYOUTS.den}) {
   const {camera}=useThree();const wasActive=useRef(false);const savedQuaternion=useRef(camera.quaternion.clone());
   useLayoutEffect(()=>{
     if(active&&!wasActive.current){
       savedQuaternion.current.copy(camera.quaternion);
-      camera.position.set(10.5,10.5,12);
-      camera.lookAt(0,1.1,-1.2);
+      const targetX=(layout.bounds.minX+layout.bounds.maxX)/2,targetZ=(layout.bounds.minZ+layout.bounds.maxZ)/2;
+      camera.position.set(layout.spawn[0],layout.spawn[1]+.8,layout.spawn[2]);
+      camera.lookAt(targetX,1.25,targetZ);
       camera.updateMatrixWorld();
       wasActive.current=true;
     }
@@ -34,15 +35,15 @@ function EditCameraRig({active}:{active:boolean}) {
       camera.updateMatrixWorld();
       wasActive.current=false;
     }
-  },[active,camera]);
+  },[active,camera,layout]);
   return null;
 }
 
-function EditCameraControls({active}:{active:boolean}) {
+function EditCameraControls({active,layout}:{active:boolean;layout:typeof ROOM_LAYOUTS.den}) {
   const {camera:threeCamera,gl}=useThree();
   const camera=useRef(threeCamera);
   const keys=useRef(new Set<string>());
-  const target=useRef(new Vector3(0,1.1,-1.2));
+  const target=useRef(new Vector3());
   const dragging=useRef(false);
   const lastPointer=useRef({x:0,y:0});
   const offset=useRef(new Vector3());
@@ -51,11 +52,12 @@ function EditCameraControls({active}:{active:boolean}) {
   const right=useRef(new Vector3());
   const move=useRef(new Vector3());
   const up=useRef(new Vector3(0,1,0));
+  const canOccupy=useCallback((position:Vector3)=>position.y>=1.1&&position.y<=layout.ceilingHeight-.35&&pointInsideOutline(layout.outline,position.x,position.z),[layout]);
   useEffect(()=>{
     const element=gl.domElement;
     if(!active){keys.current.clear();dragging.current=false;return;}
     const keyState=keys.current;
-    target.current.set(0,1.1,-1.2);
+    target.current.set((layout.bounds.minX+layout.bounds.maxX)/2,1.25,(layout.bounds.minZ+layout.bounds.maxZ)/2);
     const onPointerDown=(event:PointerEvent)=>{
       if(event.button!==0&&event.button!==1&&event.button!==2)return;
       dragging.current=true;lastPointer.current={x:event.clientX,y:event.clientY};element.setPointerCapture?.(event.pointerId);event.preventDefault();
@@ -65,11 +67,11 @@ function EditCameraControls({active}:{active:boolean}) {
       const dx=event.clientX-lastPointer.current.x,dy=event.clientY-lastPointer.current.y;lastPointer.current={x:event.clientX,y:event.clientY};
       offset.current.copy(camera.current.position).sub(target.current);spherical.current.setFromVector3(offset.current);
       spherical.current.theta-=dx*.006;spherical.current.phi=MathUtils.clamp(spherical.current.phi+dy*.006,.28,1.48);
-      offset.current.setFromSpherical(spherical.current);camera.current.position.copy(target.current).add(offset.current);camera.current.lookAt(target.current);camera.current.updateMatrixWorld();event.preventDefault();
+      offset.current.setFromSpherical(spherical.current);const next=target.current.clone().add(offset.current);if(canOccupy(next)){camera.current.position.copy(next);camera.current.lookAt(target.current);camera.current.updateMatrixWorld();}event.preventDefault();
     };
     const stopDragging=(event:PointerEvent)=>{dragging.current=false;if(element.hasPointerCapture?.(event.pointerId))element.releasePointerCapture?.(event.pointerId);};
     const onWheel=(event:WheelEvent)=>{
-      event.preventDefault();offset.current.copy(camera.current.position).sub(target.current);const distance=MathUtils.clamp(offset.current.length()*(1+event.deltaY*.001),4,24);offset.current.setLength(distance);camera.current.position.copy(target.current).add(offset.current);camera.current.lookAt(target.current);camera.current.updateMatrixWorld();
+      event.preventDefault();offset.current.copy(camera.current.position).sub(target.current);const distance=MathUtils.clamp(offset.current.length()*(1+event.deltaY*.001),4,24);offset.current.setLength(distance);const next=target.current.clone().add(offset.current);if(canOccupy(next)){camera.current.position.copy(next);camera.current.lookAt(target.current);camera.current.updateMatrixWorld();}
     };
     const onKeyDown=(event:KeyboardEvent)=>{
       if(event.target instanceof HTMLElement&&event.target.matches('input,textarea,select,[contenteditable=true]'))return;
@@ -80,7 +82,7 @@ function EditCameraControls({active}:{active:boolean}) {
     element.addEventListener('pointerdown',onPointerDown);element.addEventListener('pointermove',onPointerMove);element.addEventListener('pointerup',stopDragging);element.addEventListener('pointercancel',stopDragging);element.addEventListener('wheel',onWheel,{passive:false});
     window.addEventListener('keydown',onKeyDown);window.addEventListener('keyup',onKeyUp);window.addEventListener('blur',onBlur);
     return()=>{element.removeEventListener('pointerdown',onPointerDown);element.removeEventListener('pointermove',onPointerMove);element.removeEventListener('pointerup',stopDragging);element.removeEventListener('pointercancel',stopDragging);element.removeEventListener('wheel',onWheel);window.removeEventListener('keydown',onKeyDown);window.removeEventListener('keyup',onKeyUp);window.removeEventListener('blur',onBlur);keyState.clear();dragging.current=false;};
-  },[active,threeCamera,gl]);
+  },[active,threeCamera,gl,canOccupy,layout]);
   useFrame((_state,delta)=>{
     if(!active)return;
     const activeCamera=camera.current;
@@ -93,7 +95,7 @@ function EditCameraControls({active}:{active:boolean}) {
     if(pressed.has('KeyA'))move.current.addScaledVector(right.current,-speed);
     if(pressed.has('KeyE'))move.current.y+=speed;
     if(pressed.has('KeyQ'))move.current.y-=speed;
-    activeCamera.position.add(move.current);activeCamera.position.y=MathUtils.clamp(activeCamera.position.y,1.1,5.4);target.current.add(move.current);target.current.y=MathUtils.clamp(target.current.y,1.1,5.4);activeCamera.lookAt(target.current);activeCamera.updateMatrixWorld();
+    const nextPosition=activeCamera.position.clone().add(move.current);if(!canOccupy(nextPosition))return;activeCamera.position.copy(nextPosition);target.current.add(move.current);target.current.y=MathUtils.clamp(target.current.y,1.1,layout.ceilingHeight-.35);activeCamera.lookAt(target.current);activeCamera.updateMatrixWorld();
   });
   return null;
 }
@@ -150,8 +152,8 @@ function Scene({onLockChange}:{onLockChange:(locked:boolean)=>void}) {
     {editMode&&<gridHelper args={[Math.max(layout.bounds.maxX-layout.bounds.minX,layout.bounds.maxZ-layout.bounds.minZ),32,'#5f8798','#273442']} position={[0,.035,(layout.bounds.minZ+layout.bounds.maxZ)/2]}/>}
     {compactSession&&workspace?<SessionObjectField objects={roomObjects} workspace={workspace} selectedId={selectedId} nearObjectId={nearObjectId}/>:roomObjects.map(object=>{const preview=editPreview?.id===object.id?editPreview:null;return <WebsiteObject key={object.id} object={preview?{...object,position:preview.position}:object} selected={object.id===selectedId} near={object.id===nearObjectId} placementValid={preview?.valid} onBeginDrag={id=>{beginObjectEdit(id);setDragging(id);}}/>;})}
     {!editMode&&liveWidgets.map((widget,index)=>{const pinned=integrationObjects.find(item=>item.roomId===room.id&&(item.reference===widget.reference||item.kind===widget.kind));const anchor=layout.integrations.find(item=>item.kind===widget.kind);const sameKindOffset=liveWidgets.slice(0,index).filter(item=>item.kind===widget.kind).length*.7;const position=pinned?.position??(anchor?[anchor.position[0]+Math.cos(anchor.rotation)*sameKindOffset,anchor.position[1],anchor.position[2]-Math.sin(anchor.rotation)*sameKindOffset] as [number,number,number]:[index*2-3,0,0]);return <LiveWidget key={widget.id} widget={widget} position={position} rotation={pinned?.rotation??anchor?.rotation??0} near={nearObjectId===`__live:${widget.id}`}/>;})}
-    <PlayerController room={room} enabled={!editMode&&locked}/><EditCameraRig active={editMode}/><PerformanceProbe physicsBodies={layout.obstacles.length+wallSegments(layout).length+2}/>
-    {editMode?(editCameraMode?<EditCameraControls active/>:null):<PointerLockControls makeDefault selector="#world-surface" onLock={()=>{setLocked(true);onLockChange(true);}} onUnlock={()=>{setLocked(false);onLockChange(false);}}/>}
+    <PlayerController room={room} enabled={!editMode&&locked}/><EditCameraRig active={editMode} layout={layout}/><PerformanceProbe physicsBodies={layout.obstacles.length+wallSegments(layout).length+2}/>
+    {editMode?(editCameraMode?<EditCameraControls active layout={layout}/>:null):<PointerLockControls makeDefault selector="#world-surface" onLock={()=>{setLocked(true);onLockChange(true);}} onUnlock={()=>{setLocked(false);onLockChange(false);}}/>}
   </>;
 }
 
