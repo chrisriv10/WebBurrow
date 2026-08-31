@@ -1,4 +1,5 @@
 import type { BookmarkObject } from './types';
+import { threeText } from './assets';
 
 export type SiteBrand='github'|'youtube'|'spotify'|'mdn'|'wikipedia'|'notion'|'vercel'|'twitch'|'google'|'google-docs'|'stackoverflow'|'leetcode'|'generic';
 export type SiteIdentity={monogram:string;domain:string;host:string;category:string;symbol:string;brand:SiteBrand};
@@ -23,11 +24,12 @@ export function siteIdentity(object:Pick<BookmarkObject,'name'|'url'|'collection
   const known=Object.entries(KNOWN).find(([domain])=>hostname===domain||hostname.endsWith(`.${domain}`))?.[1];
   const words=object.name.trim().split(/\s+/).filter(Boolean);
   const fallback=(words.length>1?words.slice(0,2).map(word=>word[0]).join(''):object.name.slice(0,2)).normalize('NFKD').replace(/[^a-z0-9]/gi,'').toUpperCase()||'WB';
+  const collection=object.collection?.trim();
   return {
     monogram:known?.monogram??fallback,
     domain:hostname,
     host:hostname,
-    category:object.collection?.trim().normalize('NFKD').replace(/[^\x20-\x7E]/g,'?')||known?.category||'Website',
+    category:collection?threeText(collection)||known?.category||'Website':known?.category||'Website',
     symbol:known?.symbol??fallback.slice(0,1),
     brand:known?.brand??'generic',
   };

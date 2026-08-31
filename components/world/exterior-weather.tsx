@@ -47,6 +47,7 @@ export function ExteriorWindow({room,window,widget,reduced,enabled}:{room:Room;w
   const condition=exteriorCondition(room,widget),night=['city-night','deep-space'].includes(room.appearance.exterior);
   const sky=condition==='storm'?'#1d2634':condition==='rain'?'#26394a':condition==='snow'?'#60778b':condition==='cloudy'?'#3e5064':night?'#10223c':'#3f6b8d';
   const activeWeather=enabled&&room.appearance.windowEffect!=='still';
+  const weatherCardWidth=Math.min(2.45,window.width*.72),weatherTitle=widget?threeText(widget.title.toUpperCase()):'';
   return <group position={window.position} rotation={[0,window.rotation,0]} userData={widget?{interactionId:`__live:${widget.id}`}:{}}>
     <RoundedBox args={[window.width+.46,window.height+.46,.24]} radius={.14} smoothness={4}><meshStandardMaterial color="#313a49" roughness={.76} metalness={.1}/></RoundedBox>
     <mesh position={[0,0,.13]}><planeGeometry args={[window.width,window.height]}/><meshBasicMaterial color={sky} side={DoubleSide}/></mesh>
@@ -57,9 +58,9 @@ export function ExteriorWindow({room,window,widget,reduced,enabled}:{room:Room;w
     <mesh position={[0,0,.205]}><planeGeometry args={[window.width,window.height]}/><meshPhysicalMaterial color="#8eb3c9" transmission={.1} transparent opacity={.08} roughness={.25} side={DoubleSide}/></mesh>
     <WindowMullions window={window}/>
     {widget&&<group position={[0,-window.height/2-.43,.18]}>
-      <RoundedBox args={[Math.min(2.45,window.width*.72),.48,.08]} radius={.06}><meshStandardMaterial color="#151d28" roughness={.86}/></RoundedBox>
-      <Text font={MONO} position={[-Math.min(1.03,window.width*.3),.07,.05]} anchorX="left" fontSize={.055} color={widget.tone}>{threeText(widget.title.toUpperCase().slice(0,28))}</Text>
-      <Text font={FONT} position={[Math.min(1.03,window.width*.3),-.08,.05]} anchorX="right" fontSize={.12} color="#edf3f7">{threeText(widget.primary.slice(0,16))}</Text>
+      <RoundedBox args={[weatherCardWidth,.48,.08]} radius={.06}><meshStandardMaterial color="#151d28" roughness={.86}/></RoundedBox>
+      <Text font={MONO} position={[-weatherCardWidth/2+.08,.07,.05]} anchorX="left" maxWidth={weatherCardWidth*.7} fontSize={.055} color={widget.tone}>{weatherTitle}</Text>
+      <Text font={FONT} position={[weatherCardWidth/2-.08,-.08,.05]} anchorX="right" fontSize={.12} color="#edf3f7">{threeText(widget.primary)}</Text>
     </group>}
   </group>;
 }
