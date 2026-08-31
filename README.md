@@ -9,6 +9,7 @@ WebBurrow turns your bookmarks into a cozy, low-poly 3D world. Every site you ca
 </p>
 
 <p align="center">
+  <a href="https://github.com/chrisriv10/WebBurrow/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/chrisriv10/WebBurrow/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="platform" src="https://img.shields.io/badge/platform-Windows%20%7C%20Web-blue">
   <img alt="node" src="https://img.shields.io/badge/node-%E2%89%A522.13-green">
   <img alt="stack" src="https://img.shields.io/badge/stack-React%2019%20%2B%20R3F-61dafb">
@@ -106,6 +107,8 @@ Prefer an unpacked build instead? Run `npm run desktop:pack`. Full details: [doc
 ### Run from source
 
 Requires **Node.js ≥ 22.13**.
+
+This minimum is intentional: the lockfile records Node 22.13.0 as the first supported Node 22 release for `jsdom` and `@napi-rs/wasm-runtime` in the test/build toolchain.
 
 ```bash
 npm install

@@ -4,6 +4,15 @@
   "description": "A local-first cozy 3D home for bookmarks.",
   "author": "WebBurrow",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chrisriv10/WebBurrow"
+  },
+  "homepage": "https://github.com/chrisriv10/WebBurrow#readme",
+  "bugs": {
+    "url": "https://github.com/chrisriv10/WebBurrow/issues"
+  },
   "main": "desktop/main.mjs",
   "engines": {
     "node": ">=22.13.0"
