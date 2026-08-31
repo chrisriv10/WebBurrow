@@ -10,6 +10,9 @@ WebBurrow turns your bookmarks into a cozy, low-poly 3D world. Every site you ca
 
 <p align="center">
   <a href="https://github.com/chrisriv10/WebBurrow/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/chrisriv10/WebBurrow/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/chrisriv10/WebBurrow/releases/latest"><img src="https://img.shields.io/github/v/release/chrisriv10/WebBurrow?style=flat-square&label=Latest%20Release" alt="Latest Release" /></a>
+  <a href="https://github.com/chrisriv10/WebBurrow/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="MIT License" /></a>
+  <a href="https://github.com/chrisriv10/WebBurrow/releases/latest"><img src="https://img.shields.io/github/downloads/chrisriv10/WebBurrow/total?style=flat-square&label=Downloads" alt="Downloads" /></a>
   <img alt="platform" src="https://img.shields.io/badge/platform-Windows%20%7C%20Web-blue">
   <img alt="node" src="https://img.shields.io/badge/node-%E2%89%A522.13-green">
   <img alt="stack" src="https://img.shields.io/badge/stack-React%2019%20%2B%20R3F-61dafb">
